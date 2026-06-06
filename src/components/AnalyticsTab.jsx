@@ -1,32 +1,23 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
-import { TrendingUp, DollarSign, Zap, Target, Award } from 'lucide-react';
+import { TrendingUp, DollarSign, Zap, Award, PieChart } from 'lucide-react';
 import { getXP, getLevel, getLevelProgress } from '../services/xpService';
+import { listCompromissos, listItens, getMesAtual } from '../services/compromissoService';
 
-const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtK = (v) => v >= 1000 ? `R$${(v / 1000).toFixed(1)}k` : `R$${v}`;
 
-const ChartTooltipArea = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="chart-tooltip">
-      <p className="chart-tooltip__label">{label}</p>
-      <p className="lime-text chart-tooltip__value">{fmt(payload[0]?.value ?? 0)}</p>
-    </div>
-  );
-};
-
-const ChartTooltipBar = ({ active, payload, label }) => {
+const Tip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="chart-tooltip">
       <p className="chart-tooltip__label">{label}</p>
       {payload.map(p => (
         <p key={p.name} style={{ color: p.color }} className="chart-tooltip__value">
-          {p.name}: {typeof p.value === 'number' && p.name.toLowerCase().includes('economia')
+          {p.name}: {String(p.value).startsWith('-') || typeof p.value === 'number' && p.name.toLowerCase().includes('saldo')
             ? fmt(p.value) : p.value}
         </p>
       ))}
@@ -34,53 +25,81 @@ const ChartTooltipBar = ({ active, payload, label }) => {
   );
 };
 
-const MONTHS_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-const DAYS_PT = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+const CAT_COLORS = {
+  'Alimentação': '#f59e0b', 'Moradia': '#3b82f6', 'Transporte': '#8b5cf6',
+  'Saúde': '#ef4444', 'Educação': '#06b6d4', 'Lazer': '#ec4899',
+  'Vestuário': '#f97316', 'Serviços': '#6b7280', 'Dívidas': '#dc2626', 'Outros': '#9ca3af'
+};
 
-export default function AnalyticsTab({ planos = [], perfil, dividas = [], gastos = [] }) {
+export default function AnalyticsTab({ userId }) {
   const xp = getXP();
   const level = getLevel(xp);
   const { levelXP, neededXP, percent } = getLevelProgress();
 
-  const totalDividas = dividas.reduce((s, d) => s + d.valor_total, 0);
-  const totalGastos = gastos.reduce((s, g) => s + g.valor, 0);
-  const saldo = perfil ? perfil.renda_mensal - totalGastos : 0;
-  const disponivel = Math.max(0, saldo);
+  const [compromissos, setCompromissos] = useState([]);
+  const [allItens, setAllItens] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Projected balance over 12 months
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const cs = await listCompromissos(userId);
+      setCompromissos(cs);
+      const allI = await Promise.all(cs.map(c => listItens(c.id)));
+      setAllItens(allI.flat());
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const mesAtual = getMesAtual();
+  const compromissoAtual = compromissos.find(c => c.mes_referencia === mesAtual);
+  const itensAtuais = allItens.filter(i => {
+    const compAtual = compromissos.find(c => c.mes_referencia === mesAtual);
+    return compAtual && i.compromisso_id === compAtual.id;
+  });
+
+  const totalComprometidoAtual = itensAtuais.reduce((s, i) => s + Number(i.valor), 0);
+  const rendaAtual = Number(compromissoAtual?.renda_mensal ?? 0);
+  const saldoAtual = rendaAtual - totalComprometidoAtual;
+  const totalPagoAtual = itensAtuais.reduce((s, i) => s + (i.pago ? Number(i.valor) : 0), 0);
+
+  // Projection: sort months and compute saldo per month
   const balanceData = useMemo(() => {
-    const nowMonth = new Date().getMonth();
-    return Array.from({ length: 12 }, (_, i) => {
-      const label = MONTHS_PT[(nowMonth + i) % 12];
-      const debtPaid = disponivel * i;
-      const remainingDebt = Math.max(0, totalDividas - debtPaid);
-      const netBalance = Math.max(0, (perfil?.renda_mensal ?? 0) - totalGastos - remainingDebt * 0.1);
-      return { mes: label, saldo: Math.round(netBalance) };
+    const sorted = [...compromissos].sort((a, b) => {
+      const parseRef = (m) => {
+        const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+        const [mes, ano] = m.mes_referencia.split('/');
+        return new Date(Number(ano), MESES.indexOf(mes), 1);
+      };
+      return parseRef(a) - parseRef(b);
     });
-  }, [disponivel, totalDividas, totalGastos, perfil]);
 
-  // Weekly sessions/XP mock based on stored session count
-  const weeklyData = useMemo(() => {
-    return DAYS_PT.map((dia, i) => ({
-      dia,
-      tarefas: i < new Date().getDay() ? Math.floor(Math.random() * 6 + 1) : 0,
-      xp: i < new Date().getDay() ? Math.floor(Math.random() * 400 + 50) : 0,
-    }));
-  }, []);
+    return sorted.map(c => {
+      const itens = allItens.filter(i => i.compromisso_id === c.id);
+      const total = itens.reduce((s, i) => s + Number(i.valor), 0);
+      const saldo = Number(c.renda_mensal) - total;
+      const [mes] = c.mes_referencia.split('/');
+      const abrev = mes.slice(0, 3);
+      return { mes: abrev, saldo: Math.round(saldo), comprometido: Math.round(total), renda: Math.round(c.renda_mensal) };
+    }).filter(d => d.renda > 0 || d.comprometido > 0);
+  }, [compromissos, allItens]);
 
-  // Plans history
-  const planData = useMemo(() =>
-    planos.slice(0, 6).reverse().map((p, i) => ({
-      plano: `P${i + 1}`,
-      economia: Math.round(p.valor_economia_mensal),
-      meses: p.meses_para_quitar ?? 0,
-    })),
-    [planos]
-  );
+  // Category breakdown for current month
+  const catData = useMemo(() => {
+    const map = {};
+    itensAtuais.forEach(i => {
+      map[i.categoria] = (map[i.categoria] || 0) + Number(i.valor);
+    });
+    return Object.entries(map)
+      .map(([cat, valor]) => ({ cat, valor: Math.round(valor) }))
+      .sort((a, b) => b.valor - a.valor);
+  }, [itensAtuais]);
 
   return (
     <div className="analytics-page">
-      {/* Header */}
       <div className="section-header" style={{ marginBottom: '1.5rem' }}>
         <TrendingUp size={20} className="lime-text" />
         <h2 className="font-bold" style={{ fontSize: '1.2rem' }}>Analytics</h2>
@@ -89,21 +108,21 @@ export default function AnalyticsTab({ planos = [], perfil, dividas = [], gastos
       {/* KPI Cards */}
       <div className="analytics-kpis">
         <div className="kpi-card">
-          <div className="kpi-card__icon" style={{ background: 'rgba(163,230,53,0.1)' }}>
-            <DollarSign size={20} className="lime-text" />
+          <div className="kpi-card__icon" style={{ background: saldoAtual >= 0 ? 'rgba(163,230,53,0.1)' : 'rgba(239,68,68,0.1)' }}>
+            <DollarSign size={20} className={saldoAtual >= 0 ? 'lime-text' : 'text-danger'} />
           </div>
           <div>
-            <p className="kpi-card__label">Saldo Mensal</p>
-            <p className={`kpi-card__value ${saldo >= 0 ? 'lime-text' : 'text-danger'}`}>{fmt(saldo)}</p>
+            <p className="kpi-card__label">Saldo do Mês</p>
+            <p className={`kpi-card__value ${saldoAtual >= 0 ? 'lime-text' : 'text-danger'}`}>{fmt(saldoAtual)}</p>
           </div>
         </div>
         <div className="kpi-card">
-          <div className="kpi-card__icon" style={{ background: 'rgba(239,68,68,0.1)' }}>
-            <Target size={20} style={{ color: '#ef4444' }} />
+          <div className="kpi-card__icon" style={{ background: 'rgba(245,158,11,0.1)' }}>
+            <TrendingUp size={20} style={{ color: '#f59e0b' }} />
           </div>
           <div>
-            <p className="kpi-card__label">Total em Dívidas</p>
-            <p className="kpi-card__value text-danger">{fmt(totalDividas)}</p>
+            <p className="kpi-card__label">Comprometido</p>
+            <p className="kpi-card__value" style={{ color: '#f59e0b' }}>{fmt(totalComprometidoAtual)}</p>
           </div>
         </div>
         <div className="kpi-card">
@@ -126,12 +145,9 @@ export default function AnalyticsTab({ planos = [], perfil, dividas = [], gastos
         </div>
       </div>
 
-      {/* Level progress */}
+      {/* XP Progress */}
       <div className="analytics-card">
-        <div className="analytics-card__title">
-          <Award size={16} className="lime-text" />
-          Progresso de Nível
-        </div>
+        <div className="analytics-card__title"><Award size={16} className="lime-text" /> Progresso de Nível</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <span className="text-muted" style={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>Nível {level}</span>
           <div className="xp-track" style={{ flex: 1, height: '10px' }}>
@@ -144,13 +160,12 @@ export default function AnalyticsTab({ planos = [], perfil, dividas = [], gastos
         </p>
       </div>
 
-      {/* Area Chart – Balance Projection */}
+      {/* Saldo por mês */}
       <div className="analytics-card">
         <div className="analytics-card__title">
-          <TrendingUp size={16} className="lime-text" />
-          Projeção de Saldo Financeiro (12 meses)
+          <TrendingUp size={16} className="lime-text" /> Saldo por Mês
         </div>
-        {perfil ? (
+        {balanceData.length > 0 ? (
           <ResponsiveContainer width="100%" height={230}>
             <AreaChart data={balanceData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
               <defs>
@@ -162,50 +177,52 @@ export default function AnalyticsTab({ planos = [], perfil, dividas = [], gastos
               <CartesianGrid strokeDasharray="3 3" stroke="#1e1e1e" vertical={false} />
               <XAxis dataKey="mes" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={fmtK} width={55} />
-              <Tooltip content={<ChartTooltipArea />} />
+              <Tooltip content={<Tip />} />
               <Area type="monotone" dataKey="saldo" stroke="#a3e635" strokeWidth={2.5} fill="url(#limeGrad)" dot={false} name="Saldo" />
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <div className="chart-placeholder">Configure seu perfil financeiro para ver a projeção.</div>
+          <div className="chart-placeholder">Nenhum dado com renda cadastrada.</div>
         )}
       </div>
 
-      {/* Bar Chart – Weekly XP */}
-      <div className="analytics-card">
-        <div className="analytics-card__title">
-          <Zap size={16} className="lime-text" />
-          Produtividade Semanal (Tarefas &amp; XP)
-        </div>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={weeklyData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }} barGap={4}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e1e1e" vertical={false} />
-            <XAxis dataKey="dia" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} />
-            <Tooltip content={<ChartTooltipBar />} />
-            <Legend wrapperStyle={{ color: '#9ca3af', fontSize: '11px', paddingTop: '8px' }} />
-            <Bar dataKey="tarefas" name="Tarefas" fill="#a3e635" radius={[4, 4, 0, 0]} maxBarSize={28} />
-            <Bar dataKey="xp" name="XP" fill="#22c55e" radius={[4, 4, 0, 0]} maxBarSize={28} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Bar Chart – Plans history */}
-      {planData.length > 0 && (
+      {/* Category breakdown */}
+      {catData.length > 0 && (
         <div className="analytics-card">
           <div className="analytics-card__title">
-            <DollarSign size={16} className="lime-text" />
-            Histórico de Planos Gerados
+            <PieChart size={16} className="lime-text" /> Gastos por Categoria — {mesAtual}
           </div>
-          <ResponsiveContainer width="100%" height={210}>
-            <BarChart data={planData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }} barGap={4}>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={catData} layout="vertical" margin={{ top: 0, right: 20, left: 60, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e1e1e" horizontal={false} />
+              <XAxis type="number" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={fmtK} />
+              <YAxis dataKey="cat" type="category" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} width={55} />
+              <Tooltip formatter={(v) => fmt(v)} />
+              <Bar dataKey="valor" name="Valor" radius={[0, 4, 4, 0]} maxBarSize={20}>
+                {catData.map((entry, i) => (
+                  <rect key={i} fill={CAT_COLORS[entry.cat] || '#9ca3af'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Comprometido vs Renda per month */}
+      {balanceData.length > 0 && (
+        <div className="analytics-card">
+          <div className="analytics-card__title">
+            <DollarSign size={16} className="lime-text" /> Renda vs. Comprometido por Mês
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={balanceData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }} barGap={4}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e1e1e" vertical={false} />
-              <XAxis dataKey="plano" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <Tooltip content={<ChartTooltipBar />} />
+              <XAxis dataKey="mes" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={fmtK} width={55} />
+              <Tooltip content={<Tip />} />
               <Legend wrapperStyle={{ color: '#9ca3af', fontSize: '11px', paddingTop: '8px' }} />
-              <Bar dataKey="economia" name="Economia/mês (R$)" fill="#a3e635" radius={[4, 4, 0, 0]} maxBarSize={28} />
-              <Bar dataKey="meses" name="Meses p/ quitar" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={28} />
+              <Bar dataKey="renda" name="Renda" fill="#a3e635" radius={[4, 4, 0, 0]} maxBarSize={28} />
+              <Bar dataKey="comprometido" name="Comprometido" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={28} />
             </BarChart>
           </ResponsiveContainer>
         </div>

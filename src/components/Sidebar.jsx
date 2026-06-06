@@ -1,25 +1,22 @@
 import React, { useState } from 'react';
 import {
-  Wallet, Home, BarChart2, Clock, LayoutDashboard, TrendingUp, Timer,
+  Wallet, Home, Clock, LayoutDashboard, TrendingUp, Timer,
   LogOut, ChevronLeft, ChevronRight, Menu, X, Zap
 } from 'lucide-react';
 import { getLevelProgress } from '../services/xpService';
 
 const NAV_ITEMS = [
-  { id: 'home', icon: Home, label: 'Início' },
-  { id: 'plan', icon: BarChart2, label: 'Meu Plano', requiresProfile: true },
-  { id: 'history', icon: Clock, label: 'Histórico', requiresProfile: true },
-  { id: 'kanban', icon: LayoutDashboard, label: 'Kanban', requiresProfile: true },
-  { id: 'analytics', icon: TrendingUp, label: 'Analytics', requiresProfile: true },
-  { id: 'timer', icon: Timer, label: 'Foco', requiresProfile: true },
+  { id: 'home',      icon: Home,            label: 'Início' },
+  { id: 'history',   icon: Clock,           label: 'Histórico' },
+  { id: 'kanban',    icon: LayoutDashboard, label: 'Kanban' },
+  { id: 'analytics', icon: TrendingUp,      label: 'Analytics' },
+  { id: 'timer',     icon: Timer,           label: 'Foco' },
 ];
 
-export default function Sidebar({ currentView, onNavigate, onLogout, hasProfile, xpData }) {
+export default function Sidebar({ currentView, onNavigate, onLogout, xpData }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { xp, level, levelXP, neededXP, percent } = xpData || getLevelProgress();
-
-  const visibleItems = NAV_ITEMS.filter(i => !i.requiresProfile || hasProfile);
 
   const handleNav = (id) => {
     onNavigate(id);
@@ -59,7 +56,7 @@ export default function Sidebar({ currentView, onNavigate, onLogout, hasProfile,
 
         {/* Navigation */}
         <nav className="sidebar__nav">
-          {visibleItems.map(({ id, icon: Icon, label }) => (
+          {NAV_ITEMS.map(({ id, icon: Icon, label }) => (
             <button
               key={id}
               className={`sidebar__item ${currentView === id ? 'sidebar__item--active' : ''}`}
@@ -102,7 +99,7 @@ export default function Sidebar({ currentView, onNavigate, onLogout, hasProfile,
 
       {/* Mobile bottom nav */}
       <nav className="mobile-bottom-nav">
-        {visibleItems.slice(0, 5).map(({ id, icon: Icon, label }) => (
+        {NAV_ITEMS.map(({ id, icon: Icon, label }) => (
           <button
             key={id}
             className={`mobile-nav-btn ${currentView === id ? 'mobile-nav-btn--active' : ''}`}
