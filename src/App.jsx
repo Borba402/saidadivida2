@@ -151,14 +151,20 @@ function App() {
   const handleGoogleLogin = async () => {
     setOauthLoading(true);
     try {
+      const redirectTo = `${window.location.origin}/`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin }
+        options: { redirectTo }
       });
       if (error) throw error;
+      // Browser will redirect — loading stays true intentionally
     } catch (err) {
       console.error(err);
-      setErrorMsg('Falha ao iniciar login com Google. Verifique a configuração OAuth no Supabase.');
+      setErrorMsg(
+        'Falha ao iniciar login com Google. ' +
+        'Certifique-se de que o provider Google está habilitado no painel do Supabase ' +
+        '(Authentication → Providers → Google).'
+      );
       setOauthLoading(false);
     }
   };
