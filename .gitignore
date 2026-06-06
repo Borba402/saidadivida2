@@ -1,4 +1,4 @@
-# Logs
+# ── Logs ──────────────────────────────────────────
 logs
 *.log
 npm-debug.log*
@@ -7,21 +7,27 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Dependencies
+# ── Dependencies ───────────────────────────────────
 node_modules/
 
-# Production build
+# ── Build output ───────────────────────────────────
 dist/
 dist-ssr/
 
-# Environment variables
+# ── Environment / Secrets (NUNCA commitar) ─────────
 .env
-.env.production
-.env.development
 .env.local
+.env.development
+.env.production
 .env.*.local
 
-# Editor directories and files
+# ── Gerados localmente ─────────────────────────────
+*.pdf
+
+# ── Vercel ─────────────────────────────────────────
+.vercel
+
+# ── Editor ─────────────────────────────────────────
 .vscode/*
 !.vscode/extensions.json
 .idea/
@@ -31,6 +37,7 @@ dist-ssr/
 *.njsproj
 *.sln
 *.sw?
+Thumbs.db
 
-# Agent files & config
+# ── Agentes / skills internos ──────────────────────
 .agents/
