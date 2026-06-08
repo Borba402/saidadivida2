@@ -1,13 +1,40 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>temp-app</title>
+
+    <title>SaiDaDívida — Controle financeiro inteligente</title>
+    <meta name="description" content="Gerencie sua renda, controle seus gastos e quite suas dívidas com planejamento inteligente." />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#3b82f6" />
+
+    <!-- Ícone padrão -->
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+
+    <!-- iOS (iPhone/iPad) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SaiDaDívida" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+
+    <!-- Open Graph (preview ao compartilhar link) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="SaiDaDívida — Controle financeiro inteligente" />
+    <meta property="og:description" content="Gerencie sua renda, controle seus gastos e quite suas dívidas de vez." />
+    <meta property="og:url" content="https://saidadivida2.vercel.app" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js');
+        });
+      }
+    </script>
   </body>
 </html>
