@@ -57,17 +57,19 @@ export default function Sidebar({ currentView, onNavigate, onLogout, xpData }) {
         {/* Navigation */}
         <nav className="sidebar__nav">
           {NAV_ITEMS.map(({ id, icon: Icon, label }) => (
-            <button
+            <div
               key={id}
+              role="button"
+              tabIndex={0}
               className={`sidebar__item ${currentView === id ? 'sidebar__item--active' : ''}`}
               onClick={() => handleNav(id)}
+              onKeyDown={e => e.key === 'Enter' && handleNav(id)}
               title={label}
               aria-label={label}
-              autoComplete="off"
             >
               <Icon size={18} style={{ flexShrink: 0 }} />
-              {!collapsed && <span data-label={label}>{label}</span>}
-            </button>
+              {!collapsed && <span>{label}</span>}
+            </div>
           ))}
         </nav>
 
@@ -93,10 +95,18 @@ export default function Sidebar({ currentView, onNavigate, onLogout, xpData }) {
         </div>
 
         {/* Logout */}
-        <button className="sidebar__logout" onClick={onLogout} title={collapsed ? 'Sair' : undefined}>
+        <div
+          role="button"
+          tabIndex={0}
+          className="sidebar__logout"
+          onClick={onLogout}
+          onKeyDown={e => e.key === 'Enter' && onLogout()}
+          title="Sair"
+          aria-label="Sair"
+        >
           <LogOut size={18} style={{ flexShrink: 0 }} />
           {!collapsed && <span>Sair</span>}
-        </button>
+        </div>
       </aside>
 
       {/* Mobile bottom nav */}
