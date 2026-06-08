@@ -1126,6 +1126,50 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
   font-weight: 700;
 }
 
+/* Renda panel (expandable) */
+.renda-panel {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.renda-panel__main {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1rem 1.25rem;
+  flex-wrap: wrap;
+}
+.renda-panel__left { display: flex; flex-direction: column; gap: 2px; }
+.renda-panel__extras-summary { display: flex; flex-direction: column; gap: 2px; }
+.renda-panel__total { display: flex; flex-direction: column; gap: 2px; }
+
+.renda-extras-panel {
+  border-top: 1px solid var(--border-color);
+  padding: 1rem 1.25rem;
+  background: var(--bg-card);
+}
+
+.renda-extra-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+}
+.renda-extra-row__desc { flex: 1; font-size: 0.85rem; font-weight: 500; }
+.renda-extra-row__valor { font-size: 0.9rem; font-weight: 700; white-space: nowrap; }
+.renda-extra-row--total {
+  background: transparent;
+  border-color: transparent;
+  border-top: 1px solid var(--border-color);
+  border-radius: 0;
+  padding-top: 0.5rem;
+  margin-top: 0.25rem;
+}
+
 /* Add item form */
 .add-item-form {
   background: var(--bg-card);

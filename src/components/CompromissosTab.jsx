@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Trash2, CheckCircle2, Circle, Calendar, DollarSign,
-  TrendingDown, ArrowRight, Edit3, Check, X, ChevronLeft, ChevronRight
+  TrendingDown, ArrowRight, Edit3, Check, X, ChevronLeft, ChevronRight,
+  ChevronDown, ChevronUp, PlusCircle
 } from 'lucide-react';
 import {
   getMesAtual, getMesesDisponiveis, getOrCreateCompromisso,
-  updateCompromisso, listItens, createItem, deleteItem, togglePago, CATEGORIAS
+  updateCompromisso, listItens, createItem, deleteItem, togglePago, CATEGORIAS,
+  listRendasExtra, createRendaExtra, deleteRendaExtra
 } from '../services/compromissoService';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const EMPTY_ITEM = { nome_item: '', valor: '', data_vencimento: '', pago: false, categoria: 'Outros' };
+const EMPTY_RENDA = { descricao: '', valor: '' };
 
 const CAT_COLORS = {
   'Alimentação': '#f59e0b', 'Moradia': '#3b82f6', 'Transporte': '#8b5cf6',
@@ -31,6 +34,7 @@ export default function CompromissosTab({ userId }) {
   const [mesSelecionado, setMesSelecionado] = useState(getMesAtual());
   const [compromisso, setCompromisso] = useState(null);
   const [itens, setItens] = useState([]);
+  const [rendasExtra, setRendasExtra] = useState([]);
   const [loading, setLoading] = useState(false);
   const [addForm, setAddForm] = useState(false);
   const [newItem, setNewItem] = useState(EMPTY_ITEM);
@@ -38,6 +42,11 @@ export default function CompromissosTab({ userId }) {
   const [rendaInput, setRendaInput] = useState('');
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [rendaExpandida, setRendaExpandida] = useState(false);
+  const [addRendaForm, setAddRendaForm] = useState(false);
+  const [newRenda, setNewRenda] = useState(EMPTY_RENDA);
+  const [rendaFormError, setRendaFormError] = useState('');
+  const [savingRenda, setSavingRenda] = useState(false);
 
   const loadMes = useCallback(async (mes) => {
     setLoading(true);
@@ -45,8 +54,9 @@ export default function CompromissosTab({ userId }) {
       const c = await getOrCreateCompromisso(userId, mes);
       setCompromisso(c);
       setRendaInput(c.renda_mensal?.toString() || '0');
-      const items = await listItens(c.id);
+      const [items, extras] = await Promise.all([listItens(c.id), listRendasExtra(c.id)]);
       setItens(items);
+      setRendasExtra(extras);
     } finally {
       setLoading(false);
     }
@@ -60,6 +70,27 @@ export default function CompromissosTab({ userId }) {
     const updated = await updateCompromisso(compromisso.id, { renda_mensal: val });
     setCompromisso(updated);
     setEditingRenda(false);
+  };
+
+  const handleAddRendaExtra = async (e) => {
+    e.preventDefault();
+    setRendaFormError('');
+    if (!newRenda.descricao.trim()) { setRendaFormError('Descrição é obrigatória.'); return; }
+    if (!newRenda.valor || Number(newRenda.valor) <= 0) { setRendaFormError('Valor deve ser maior que zero.'); return; }
+    setSavingRenda(true);
+    try {
+      const created = await createRendaExtra(compromisso.id, { descricao: newRenda.descricao, valor: Number(newRenda.valor) });
+      setRendasExtra(prev => [...prev, created]);
+      setNewRenda(EMPTY_RENDA);
+      setAddRendaForm(false);
+    } finally {
+      setSavingRenda(false);
+    }
+  };
+
+  const handleDeleteRendaExtra = async (id) => {
+    await deleteRendaExtra(id);
+    setRendasExtra(prev => prev.filter(r => r.id !== id));
   };
 
   const handleAddItem = async (e) => {
@@ -94,8 +125,10 @@ export default function CompromissosTab({ userId }) {
 
   const totalGastos = itens.reduce((s, i) => s + Number(i.valor), 0);
   const totalPago = itens.reduce((s, i) => s + (i.pago ? Number(i.valor) : 0), 0);
-  const renda = Number(compromisso?.renda_mensal ?? 0);
-  const saldo = renda - totalGastos;
+  const rendaPrincipal = Number(compromisso?.renda_mensal ?? 0);
+  const totalExtras = rendasExtra.reduce((s, r) => s + Number(r.valor), 0);
+  const totalRenda = rendaPrincipal + totalExtras;
+  const saldo = totalRenda - totalGastos;
 
   const mesIdx = meses.indexOf(mesSelecionado);
   const prevMes = mesIdx > 0 ? meses[mesIdx - 1] : null;
@@ -130,37 +163,125 @@ export default function CompromissosTab({ userId }) {
         </div>
       ) : (
         <>
-          {/* Balance strip */}
-          <div className="balance-panel">
-            {/* Renda */}
-            <div className="balance-panel__item">
-              <span className="balance-panel__label">Renda Mensal</span>
-              {editingRenda ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '2px' }}>
-                  <input
-                    type="number"
-                    className="input-field"
-                    style={{ padding: '0.3rem 0.6rem', fontSize: '0.9rem', width: '140px' }}
-                    value={rendaInput}
-                    onChange={e => setRendaInput(e.target.value)}
-                    autoFocus
-                    onKeyDown={e => { if (e.key === 'Enter') handleSaveRenda(); if (e.key === 'Escape') setEditingRenda(false); }}
-                  />
-                  <button className="btn-icon-plain lime-text" onClick={handleSaveRenda}><Check size={16} /></button>
-                  <button className="btn-icon-plain" onClick={() => setEditingRenda(false)}><X size={16} /></button>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <span className="balance-panel__value lime-text">{fmt(renda)}</span>
-                  <button className="btn-icon-plain" onClick={() => setEditingRenda(true)} title="Editar renda">
-                    <Edit3 size={13} style={{ color: 'var(--text-muted)' }} />
-                  </button>
+          {/* Renda panel (expandable) */}
+          <div className="renda-panel">
+            <div className="renda-panel__main">
+              <div className="renda-panel__left">
+                <span className="balance-panel__label">Renda Principal</span>
+                {editingRenda ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '2px' }}>
+                    <input
+                      type="number"
+                      className="input-field"
+                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.9rem', width: '140px' }}
+                      value={rendaInput}
+                      onChange={e => setRendaInput(e.target.value)}
+                      autoFocus
+                      onKeyDown={e => { if (e.key === 'Enter') handleSaveRenda(); if (e.key === 'Escape') setEditingRenda(false); }}
+                    />
+                    <button className="btn-icon-plain lime-text" onClick={handleSaveRenda}><Check size={16} /></button>
+                    <button className="btn-icon-plain" onClick={() => setEditingRenda(false)}><X size={16} /></button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span className="balance-panel__value lime-text">{fmt(rendaPrincipal)}</span>
+                    <button className="btn-icon-plain" onClick={() => setEditingRenda(true)} title="Editar renda">
+                      <Edit3 size={13} style={{ color: 'var(--text-muted)' }} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {rendasExtra.length > 0 && (
+                <div className="renda-panel__extras-summary">
+                  <span className="balance-panel__label">+ Rendas extras</span>
+                  <span className="balance-panel__value" style={{ color: '#22c55e' }}>+{fmt(totalExtras)}</span>
                 </div>
               )}
+
+              <div className="renda-panel__total">
+                <span className="balance-panel__label">Total Renda</span>
+                <span className="balance-panel__value lime-text" style={{ fontSize: '1.15rem' }}>{fmt(totalRenda)}</span>
+              </div>
+
+              <button
+                className="btn-icon-plain"
+                onClick={() => setRendaExpandida(v => !v)}
+                title="Gerenciar rendas extras"
+                style={{ marginLeft: 'auto' }}
+              >
+                {rendaExpandida ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </button>
             </div>
 
-            <div className="balance-panel__divider" />
+            {rendaExpandida && (
+              <div className="renda-extras-panel slide-down">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                  <span className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Rendas Extras — {mesSelecionado}
+                  </span>
+                  <button
+                    className="btn btn-outline"
+                    style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}
+                    onClick={() => { setAddRendaForm(v => !v); setRendaFormError(''); }}
+                  >
+                    <PlusCircle size={13} /> Adicionar
+                  </button>
+                </div>
 
+                {addRendaForm && (
+                  <form onSubmit={handleAddRendaExtra} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                    <div className="input-group" style={{ marginBottom: 0, flex: 2, minWidth: '140px' }}>
+                      <label className="input-label">Descrição *</label>
+                      <input type="text" className="input-field" placeholder="Ex: Freelance, Aluguel..." value={newRenda.descricao}
+                        onChange={e => setNewRenda(v => ({ ...v, descricao: e.target.value }))} />
+                    </div>
+                    <div className="input-group" style={{ marginBottom: 0, flex: 1, minWidth: '110px' }}>
+                      <label className="input-label">Valor (R$) *</label>
+                      <input type="number" step="0.01" min="0.01" className="input-field" placeholder="0,00" value={newRenda.valor}
+                        onChange={e => setNewRenda(v => ({ ...v, valor: e.target.value }))} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.4rem', paddingBottom: '1px' }}>
+                      <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem 0.875rem' }} disabled={savingRenda}>
+                        <Check size={14} />
+                      </button>
+                      <button type="button" className="btn btn-outline" style={{ padding: '0.5rem 0.875rem' }}
+                        onClick={() => { setAddRendaForm(false); setNewRenda(EMPTY_RENDA); setRendaFormError(''); }}>
+                        <X size={14} />
+                      </button>
+                    </div>
+                    {rendaFormError && <p className="text-danger text-xs w-full">{rendaFormError}</p>}
+                  </form>
+                )}
+
+                {rendasExtra.length === 0 && !addRendaForm ? (
+                  <p className="text-muted text-xs text-center" style={{ padding: '0.75rem' }}>
+                    Nenhuma renda extra cadastrada. Clique em "Adicionar" para incluir.
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    {rendasExtra.map(r => (
+                      <div key={r.id} className="renda-extra-row">
+                        <span className="renda-extra-row__desc">{r.descricao}</span>
+                        <span className="renda-extra-row__valor" style={{ color: '#22c55e' }}>{fmt(r.valor)}</span>
+                        <button className="btn-icon" onClick={() => handleDeleteRendaExtra(r.id)} title="Remover">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                    <div className="renda-extra-row renda-extra-row--total">
+                      <span style={{ fontWeight: 700, fontSize: '0.8rem' }}>Total extras</span>
+                      <span style={{ fontWeight: 800, color: '#22c55e' }}>{fmt(totalExtras)}</span>
+                      <span />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Balance strip */}
+          <div className="balance-panel">
             <div className="balance-panel__item">
               <TrendingDown size={13} className="text-danger" style={{ marginBottom: 2 }} />
               <span className="balance-panel__label">Total Comprometido</span>
@@ -206,44 +327,25 @@ export default function CompromissosTab({ userId }) {
               <div className="add-item-grid">
                 <div className="input-group" style={{ marginBottom: 0 }}>
                   <label className="input-label">Nome do item *</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="Ex: Aluguel, Supermercado"
-                    value={newItem.nome_item}
-                    onChange={e => setNewItem(v => ({ ...v, nome_item: e.target.value }))}
-                  />
+                  <input type="text" className="input-field" placeholder="Ex: Aluguel, Supermercado"
+                    value={newItem.nome_item} onChange={e => setNewItem(v => ({ ...v, nome_item: e.target.value }))} />
                 </div>
                 <div className="input-group" style={{ marginBottom: 0 }}>
                   <label className="input-label">Valor (R$) *</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    className="input-field"
-                    placeholder="0,00"
-                    value={newItem.valor}
-                    onChange={e => setNewItem(v => ({ ...v, valor: e.target.value }))}
-                  />
+                  <input type="number" step="0.01" min="0.01" className="input-field" placeholder="0,00"
+                    value={newItem.valor} onChange={e => setNewItem(v => ({ ...v, valor: e.target.value }))} />
                 </div>
                 <div className="input-group" style={{ marginBottom: 0 }}>
                   <label className="input-label">Categoria</label>
-                  <select
-                    className="input-field"
-                    value={newItem.categoria}
-                    onChange={e => setNewItem(v => ({ ...v, categoria: e.target.value }))}
-                  >
+                  <select className="input-field" value={newItem.categoria}
+                    onChange={e => setNewItem(v => ({ ...v, categoria: e.target.value }))}>
                     {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="input-group" style={{ marginBottom: 0 }}>
                   <label className="input-label">Vencimento</label>
-                  <input
-                    type="date"
-                    className="input-field"
-                    value={newItem.data_vencimento}
-                    onChange={e => setNewItem(v => ({ ...v, data_vencimento: e.target.value }))}
-                  />
+                  <input type="date" className="input-field" value={newItem.data_vencimento}
+                    onChange={e => setNewItem(v => ({ ...v, data_vencimento: e.target.value }))} />
                 </div>
               </div>
               {formError && <p className="text-danger text-xs" style={{ marginTop: '0.5rem' }}>{formError}</p>}
@@ -298,29 +400,20 @@ export default function CompromissosTab({ userId }) {
                             ? new Date(item.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')
                             : <span style={{ color: 'var(--border-hover)' }}>Sem data</span>}
                         </td>
-                        <td style={{ textAlign: 'right', fontWeight: 700, fontSize: '0.9rem' }}>
-                          {fmt(item.valor)}
-                        </td>
+                        <td style={{ textAlign: 'right', fontWeight: 700, fontSize: '0.9rem' }}>{fmt(item.valor)}</td>
                         <td style={{ textAlign: 'center' }}>
                           <StatusChip pago={item.pago} vencimento={item.data_vencimento} />
                         </td>
                         <td style={{ textAlign: 'center' }}>
-                          <button
-                            className="toggle-pago-btn"
-                            onClick={() => handleToggle(item)}
-                            title={item.pago ? 'Marcar como pendente' : 'Marcar como pago'}
-                          >
+                          <button className="toggle-pago-btn" onClick={() => handleToggle(item)}
+                            title={item.pago ? 'Marcar como pendente' : 'Marcar como pago'}>
                             {item.pago
                               ? <CheckCircle2 size={20} style={{ color: 'var(--success)' }} />
                               : <Circle size={20} style={{ color: 'var(--border-hover)' }} />}
                           </button>
                         </td>
                         <td>
-                          <button
-                            className="btn-icon"
-                            onClick={() => handleDelete(item.id)}
-                            title="Remover item"
-                          >
+                          <button className="btn-icon" onClick={() => handleDelete(item.id)} title="Remover item">
                             <Trash2 size={16} />
                           </button>
                         </td>

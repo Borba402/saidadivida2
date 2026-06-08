@@ -41,3 +41,22 @@ CREATE POLICY "itens_user" ON itens_compromisso
       SELECT id FROM compromissos WHERE user_id = auth.uid()
     )
   );
+
+-- Tabela de rendas extras por mês
+CREATE TABLE IF NOT EXISTS rendas_extra (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  compromisso_id  UUID REFERENCES compromissos(id) ON DELETE CASCADE NOT NULL,
+  descricao       TEXT NOT NULL,
+  valor           DECIMAL(10,2) NOT NULL DEFAULT 0,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE rendas_extra ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "rendas_extra_user" ON rendas_extra;
+CREATE POLICY "rendas_extra_user" ON rendas_extra
+  FOR ALL USING (
+    compromisso_id IN (
+      SELECT id FROM compromissos WHERE user_id = auth.uid()
+    )
+  );

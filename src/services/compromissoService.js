@@ -120,3 +120,30 @@ export const CATEGORIAS = [
   'Alimentação', 'Moradia', 'Transporte', 'Saúde',
   'Educação', 'Lazer', 'Vestuário', 'Serviços', 'Dívidas', 'Outros'
 ];
+
+// ── Rendas Extra ──────────────────────────────────────────────
+
+export async function listRendasExtra(compromissoId) {
+  const { data, error } = await supabase
+    .from('rendas_extra')
+    .select('*')
+    .eq('compromisso_id', compromissoId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createRendaExtra(compromissoId, { descricao, valor }) {
+  const { data, error } = await supabase
+    .from('rendas_extra')
+    .insert({ compromisso_id: compromissoId, descricao, valor: Number(valor) })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteRendaExtra(id) {
+  const { error } = await supabase.from('rendas_extra').delete().eq('id', id);
+  if (error) throw error;
+}
