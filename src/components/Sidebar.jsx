@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Wallet, Home, Clock, LayoutDashboard, TrendingUp, Timer,
-  LogOut, ChevronLeft, ChevronRight, Menu, X, Zap
+  LogOut, ChevronLeft, ChevronRight, Menu, X, Zap, CheckSquare
 } from 'lucide-react';
 import { getLevelProgress } from '../services/xpService';
 
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { id: 'history',   icon: Clock,           label: 'Histórico' },
   { id: 'kanban',    icon: LayoutDashboard, label: 'Kanban' },
   { id: 'analytics', icon: TrendingUp,      label: 'Analytics' },
+  { id: 'tasks',     icon: CheckSquare,     label: 'Tarefas' },
   { id: 'timer',     icon: Timer,           label: 'Foco' },
 ];
 
@@ -61,6 +62,7 @@ export default function Sidebar({ currentView, onNavigate, onLogout, xpData }) {
               key={id}
               role="button"
               tabIndex={0}
+              data-label={collapsed ? '' : label}
               className={`sidebar__item ${currentView === id ? 'sidebar__item--active' : ''}`}
               onClick={() => handleNav(id)}
               onKeyDown={e => e.key === 'Enter' && handleNav(id)}
@@ -68,7 +70,6 @@ export default function Sidebar({ currentView, onNavigate, onLogout, xpData }) {
               aria-label={label}
             >
               <Icon size={18} style={{ flexShrink: 0 }} />
-              {!collapsed && <span>{label}</span>}
             </div>
           ))}
         </nav>
@@ -98,6 +99,7 @@ export default function Sidebar({ currentView, onNavigate, onLogout, xpData }) {
         <div
           role="button"
           tabIndex={0}
+          data-label={collapsed ? '' : 'Sair'}
           className="sidebar__logout"
           onClick={onLogout}
           onKeyDown={e => e.key === 'Enter' && onLogout()}
@@ -105,7 +107,6 @@ export default function Sidebar({ currentView, onNavigate, onLogout, xpData }) {
           aria-label="Sair"
         >
           <LogOut size={18} style={{ flexShrink: 0 }} />
-          {!collapsed && <span>Sair</span>}
         </div>
       </aside>
 

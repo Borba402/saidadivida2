@@ -162,11 +162,13 @@ body {
   overflow: hidden;
   max-width: 100%;
 }
-.sidebar__item span {
+/* Label rendered via CSS to prevent Chrome autofill injection into DOM text nodes */
+.sidebar__item::after {
+  content: attr(data-label);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 140px;
+  flex: 1;
 }
 .sidebar__item:hover { background: var(--bg-elevated); color: var(--text-main); }
 .sidebar__item--active {
@@ -204,7 +206,12 @@ body {
   font-size: 0.875rem;
   font-weight: 500;
   white-space: nowrap;
+  overflow: hidden;
   transition: background var(--transition-fast), color var(--transition-fast);
+}
+.sidebar__logout::after {
+  content: attr(data-label);
+  flex: 1;
 }
 .sidebar__logout:hover { background: var(--danger-light); color: var(--danger); }
 
@@ -390,6 +397,13 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
   border: none;
 }
 .btn-lime:hover { background: var(--lime-hover); }
+
+.btn-secondary {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+.btn-secondary:hover { background: var(--border-hover); color: var(--text-main); }
 
 /* ============================================
    BADGES
@@ -1037,6 +1051,158 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
   .kanban-board { grid-template-columns: 1fr; }
   .analytics-kpis { grid-template-columns: 1fr 1fr; }
   .app-main { padding: 0.75rem; padding-top: calc(var(--topbar-h) + 0.75rem); padding-bottom: calc(var(--bottomnav-h) + 0.75rem); }
+}
+
+/* ============================================
+   TAREFAS
+   ============================================ */
+.tarefas-page { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.tarefas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tarefas-form-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.tarefas-filtros {
+  display: flex;
+  gap: 0.375rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 0.375rem;
+}
+.tarefas-filtro-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.tarefas-filtro-btn--active {
+  background: var(--lime-dim);
+  color: var(--lime);
+  font-weight: 700;
+}
+.tarefas-filtro-count {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-full);
+  padding: 1px 7px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.tarefas-filtro-btn--active .tarefas-filtro-count {
+  background: rgba(163,230,53,0.15);
+}
+
+.tarefas-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.tarefa-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.tarefa-card:hover { border-color: var(--border-hover); }
+.tarefa-card--concluida { opacity: 0.6; }
+.tarefa-card--vencida { border-left: 3px solid var(--danger); }
+
+.tarefa-card__main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+}
+.tarefa-check-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: opacity var(--transition-fast);
+}
+.tarefa-check-btn:hover { opacity: 0.7; }
+
+.tarefa-card__content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.tarefa-titulo {
+  font-size: 0.925rem;
+  font-weight: 500;
+  color: var(--text-main);
+}
+.tarefa-titulo--done {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.tarefa-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tarefa-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.tarefa-badge--baixa  { background: rgba(59,130,246,0.12); color: #60a5fa; }
+.tarefa-badge--normal { background: var(--bg-elevated); color: var(--text-muted); }
+.tarefa-badge--alta   { background: var(--danger-light); color: var(--danger); }
+
+.tarefa-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.tarefa-date--vencida { color: var(--danger); }
+
+.tarefa-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+.btn-icon-danger:hover { color: var(--danger) !important; }
+
+.tarefa-anotacoes {
+  padding: 0.75rem 1rem 0.875rem 3.25rem;
+  font-size: 0.825rem;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border-color);
+  white-space: pre-wrap;
+  line-height: 1.6;
 }
 
 /* ============================================

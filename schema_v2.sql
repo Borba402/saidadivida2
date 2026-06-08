@@ -60,3 +60,21 @@ CREATE POLICY "rendas_extra_user" ON rendas_extra
       SELECT id FROM compromissos WHERE user_id = auth.uid()
     )
   );
+
+-- Tabela de tarefas diárias do usuário
+CREATE TABLE IF NOT EXISTS tarefas (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id         UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  titulo          TEXT NOT NULL,
+  anotacoes       TEXT,
+  data_vencimento DATE,
+  concluida       BOOLEAN DEFAULT FALSE,
+  prioridade      TEXT DEFAULT 'normal',
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE tarefas ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "tarefas_user" ON tarefas;
+CREATE POLICY "tarefas_user" ON tarefas
+  FOR ALL USING (auth.uid() = user_id);

@@ -7,6 +7,7 @@ import CompromissosTab from './components/CompromissosTab';
 import HistoricoTab from './components/HistoricoTab';
 import KanbanTab from './components/KanbanTab';
 import AnalyticsTab from './components/AnalyticsTab';
+import TarefasTab from './components/TarefasTab';
 import FocusTimer from './components/FocusTimer';
 
 import { onAuthChange, signOut } from './services/authService';
@@ -72,6 +73,9 @@ function App() {
         )}
         {currentView === 'analytics' && (
           <AnalyticsTab userId={userId} />
+        )}
+        {currentView === 'tasks' && (
+          <TarefasTab userId={userId} />
         )}
         {currentView === 'timer' && (
           <FocusTimer dividas={[]} onXPGained={handleXPGained} />
