@@ -1042,15 +1042,87 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
   .timer-page { padding-top: 0; }
   .timer-card { padding: 1.5rem; }
 
-  /* Balance panel */
-  .balance-panel { flex-direction: column; gap: 0.75rem; }
-  .balance-panel__divider { width: 100%; height: 1px; }
+  /* Balance panel → 2-col grid */
+  .balance-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; }
+  .balance-panel__divider { display: none; }
+  .balance-panel > svg { display: none; }
+  .balance-panel__item:last-child {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border-color);
+    padding-top: 0.5rem;
+  }
+  .balance-panel__item:last-child .balance-panel__value { font-size: 1.2rem; }
 }
 
 @media (max-width: 480px) {
   .kanban-board { grid-template-columns: 1fr; }
   .analytics-kpis { grid-template-columns: 1fr 1fr; }
   .app-main { padding: 0.75rem; padding-top: calc(var(--topbar-h) + 0.75rem); padding-bottom: calc(var(--bottomnav-h) + 0.75rem); }
+}
+
+/* ── Mobile: compromissos layout ─────────────────── */
+@media (max-width: 600px) {
+  .compromissos-page { gap: 0.75rem; }
+
+  /* Month nav: show only active month between arrows */
+  .month-tab { display: none; }
+  .month-tab--active {
+    display: flex;
+    pointer-events: none;
+    min-width: 130px;
+    justify-content: center;
+    font-size: 0.9rem;
+  }
+  .month-nav { justify-content: space-between; }
+
+  /* Renda panel: compact */
+  .renda-panel__main { gap: 0.625rem; }
+
+  /* Items table → card layout */
+  .items-table-wrap {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+  }
+  .items-table { display: block; }
+  .items-table thead { display: none; }
+  .items-table tbody { display: flex; flex-direction: column; gap: 0.625rem; }
+
+  .items-table__row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    grid-template-areas:
+      "name  val   val"
+      "cat   stat  stat"
+      "due   tog   del";
+    gap: 0.25rem 0.625rem;
+    padding: 0.875rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    opacity: 1;
+  }
+  .items-table__row--pago { opacity: 0.55; }
+  .items-table__row td { padding: 0; border: none; display: block; font-size: 0.85rem; }
+  .items-table__row:hover td { background: transparent; }
+
+  .items-table__row td:nth-child(1) { grid-area: name; font-weight: 600; font-size: 0.9rem; align-self: center; }
+  .items-table__row td:nth-child(2) { grid-area: cat; }
+  .items-table__row td:nth-child(3) { grid-area: due; font-size: 0.75rem; align-self: center; }
+  .items-table__row td:nth-child(4) { grid-area: val; text-align: right; font-size: 1rem !important; font-weight: 800; align-self: center; }
+  .items-table__row td:nth-child(5) { grid-area: stat; text-align: right; }
+  .items-table__row td:nth-child(6) { grid-area: tog; display: flex; justify-content: flex-end; align-items: center; }
+  .items-table__row td:nth-child(7) { grid-area: del; display: flex; justify-content: flex-end; align-items: center; }
+
+  /* tfoot total → flex row */
+  .items-table tfoot { display: block; margin-top: 0.25rem; }
+  .items-table__total { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); }
+  .items-table__total td { display: inline; border: none; padding: 0; }
+  .items-table__total td:last-child { display: none; }
 }
 
 /* ============================================
