@@ -61,10 +61,12 @@ export default function Sidebar({ currentView, onNavigate, onLogout, xpData }) {
               key={id}
               className={`sidebar__item ${currentView === id ? 'sidebar__item--active' : ''}`}
               onClick={() => handleNav(id)}
-              title={collapsed ? label : undefined}
+              title={label}
+              aria-label={label}
+              autoComplete="off"
             >
               <Icon size={18} style={{ flexShrink: 0 }} />
-              {!collapsed && <span>{label}</span>}
+              {!collapsed && <span data-label={label}>{label}</span>}
             </button>
           ))}
         </nav>

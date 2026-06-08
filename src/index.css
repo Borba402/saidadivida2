@@ -159,6 +159,14 @@ body {
   text-align: left;
   transition: background var(--transition-fast), color var(--transition-fast);
   white-space: nowrap;
+  overflow: hidden;
+  max-width: 100%;
+}
+.sidebar__item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
 }
 .sidebar__item:hover { background: var(--bg-elevated); color: var(--text-main); }
 .sidebar__item--active {
