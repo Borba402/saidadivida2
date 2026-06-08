@@ -78,3 +78,18 @@ ALTER TABLE tarefas ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "tarefas_user" ON tarefas;
 CREATE POLICY "tarefas_user" ON tarefas
   FOR ALL USING (auth.uid() = user_id);
+
+-- Tabela de avaliações da landing page (anônimas)
+CREATE TABLE IF NOT EXISTS avaliacoes (
+  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  nota       INTEGER NOT NULL CHECK (nota BETWEEN 1 AND 5),
+  comentario TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE avaliacoes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "avaliacoes_insert" ON avaliacoes;
+DROP POLICY IF EXISTS "avaliacoes_select" ON avaliacoes;
+CREATE POLICY "avaliacoes_insert" ON avaliacoes FOR INSERT WITH CHECK (true);
+CREATE POLICY "avaliacoes_select" ON avaliacoes FOR SELECT USING (true);

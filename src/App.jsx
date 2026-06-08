@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react';
 
 import Sidebar from './components/Sidebar';
 import LoginPage from './components/LoginPage';
+import LandingPage from './components/LandingPage';
 import CompromissosTab from './components/CompromissosTab';
 import HistoricoTab from './components/HistoricoTab';
 import KanbanTab from './components/KanbanTab';
@@ -15,6 +16,7 @@ import { getLevelProgress, addXP } from './services/xpService';
 
 function App() {
   const [session, setSession] = useState(undefined); // undefined = loading
+  const [showLanding, setShowLanding] = useState(true);
   const [currentView, setCurrentView] = useState('home');
   const [xpData, setXpData] = useState(() => getLevelProgress());
 
@@ -29,6 +31,7 @@ function App() {
     if (!window.confirm('Deseja sair da sua conta?')) return;
     await signOut();
     setCurrentView('home');
+    setShowLanding(true);
   };
 
   const handleXPGained = useCallback(() => {
@@ -43,6 +46,11 @@ function App() {
         <span className="text-muted text-sm">Carregando...</span>
       </div>
     );
+  }
+
+  // Landing page (not authenticated + first visit)
+  if (!session && showLanding) {
+    return <LandingPage onStart={() => setShowLanding(false)} />;
   }
 
   // Not authenticated
