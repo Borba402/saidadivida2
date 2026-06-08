@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Wallet, Home, Clock, LayoutDashboard, TrendingUp, Timer,
-  LogOut, ChevronLeft, ChevronRight, Menu, X, Zap, CheckSquare
+  LogOut, ChevronLeft, ChevronRight, Menu, X, Zap, CheckSquare,
+  Bell, BellOff
 } from 'lucide-react';
 import { getLevelProgress } from '../services/xpService';
+import { isPushSupported, isSubscribed, subscribe, unsubscribe } from '../services/notificationService';
 
 const NAV_ITEMS = [
   { id: 'home',      icon: Home,            label: 'Início' },
@@ -14,10 +16,34 @@ const NAV_ITEMS = [
   { id: 'timer',     icon: Timer,           label: 'Foco' },
 ];
 
-export default function Sidebar({ currentView, onNavigate, onLogout, xpData }) {
+export default function Sidebar({ currentView, onNavigate, onLogout, xpData, userId }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notifEnabled, setNotifEnabled] = useState(false);
+  const [notifLoading, setNotifLoading] = useState(false);
   const { xp, level, levelXP, neededXP, percent } = xpData || getLevelProgress();
+
+  useEffect(() => {
+    if (isPushSupported()) isSubscribed().then(setNotifEnabled);
+  }, []);
+
+  const handleToggleNotif = async () => {
+    if (!userId) return;
+    setNotifLoading(true);
+    try {
+      if (notifEnabled) {
+        await unsubscribe(userId);
+        setNotifEnabled(false);
+      } else {
+        await subscribe(userId);
+        setNotifEnabled(true);
+      }
+    } catch (e) {
+      alert(e.message || 'Erro ao configurar notificações');
+    } finally {
+      setNotifLoading(false);
+    }
+  };
 
   const handleNav = (id) => {
     onNavigate(id);
@@ -94,6 +120,26 @@ export default function Sidebar({ currentView, onNavigate, onLogout, xpData }) {
             </div>
           )}
         </div>
+
+        {/* Bell / Notificações */}
+        {isPushSupported() && (
+          <div
+            role="button"
+            tabIndex={0}
+            data-label={collapsed ? '' : (notifEnabled ? 'Notificações On' : 'Notificações Off')}
+            className={`sidebar__logout ${notifEnabled ? 'sidebar__notif--on' : ''}`}
+            onClick={notifLoading ? undefined : handleToggleNotif}
+            onKeyDown={e => e.key === 'Enter' && !notifLoading && handleToggleNotif()}
+            title={notifEnabled ? 'Desativar notificações' : 'Ativar notificações'}
+            aria-label={notifEnabled ? 'Desativar notificações' : 'Ativar notificações'}
+            style={{ opacity: notifLoading ? 0.5 : 1, cursor: notifLoading ? 'wait' : 'pointer' }}
+          >
+            {notifEnabled
+              ? <Bell size={18} style={{ flexShrink: 0, color: '#a3e635' }} />
+              : <BellOff size={18} style={{ flexShrink: 0 }} />
+            }
+          </div>
+        )}
 
         {/* Logout */}
         <div

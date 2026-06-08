@@ -93,3 +93,18 @@ DROP POLICY IF EXISTS "avaliacoes_insert" ON avaliacoes;
 DROP POLICY IF EXISTS "avaliacoes_select" ON avaliacoes;
 CREATE POLICY "avaliacoes_insert" ON avaliacoes FOR INSERT WITH CHECK (true);
 CREATE POLICY "avaliacoes_select" ON avaliacoes FOR SELECT USING (true);
+
+-- Tabela de inscrições push (Web Push API)
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id           UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id      UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
+  subscription JSONB NOT NULL,
+  created_at   TIMESTAMPTZ DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "push_sub_user" ON push_subscriptions;
+CREATE POLICY "push_sub_user" ON push_subscriptions
+  FOR ALL USING (auth.uid() = user_id);

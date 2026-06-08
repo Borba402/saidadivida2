@@ -33,3 +33,38 @@ self.addEventListener('fetch', e => {
     })
   );
 });
+
+// ── Push notification recebida ─────────────────
+self.addEventListener('push', e => {
+  let data = { title: '⚡ SaiDaDívida', body: 'Você tem contas a vencer!', url: '/' };
+  try { if (e.data) data = { ...data, ...e.data.json() }; } catch { /* ignore */ }
+
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icon.svg',
+      badge: '/icon.svg',
+      vibrate: [200, 100, 200],
+      data: { url: data.url },
+      actions: [
+        { action: 'open',    title: '📋 Ver contas' },
+        { action: 'dismiss', title: 'Dispensar' },
+      ],
+    })
+  );
+});
+
+// ── Clique na notificação ──────────────────────
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  if (e.action === 'dismiss') return;
+
+  const url = e.notification.data?.url || '/';
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const existing = list.find(c => c.url.includes(self.location.origin));
+      if (existing) return existing.focus();
+      return clients.openWindow(url);
+    })
+  );
+});

@@ -67,6 +67,7 @@ function App() {
         onNavigate={setCurrentView}
         onLogout={handleLogout}
         xpData={xpData}
+        userId={userId}
       />
 
       <main className="app-main">
