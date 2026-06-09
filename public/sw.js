@@ -1,5 +1,5 @@
-const CACHE = 'saidadivida-v1';
-const PRECACHE = ['/', '/index.html'];
+const CACHE = 'saidadivida-v2';
+const PRECACHE = ['/'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)));
@@ -21,6 +21,20 @@ self.addEventListener('fetch', e => {
   if (request.url.includes('supabase.co')) return;
   if (request.url.includes('googleapis.com')) return;
 
+  // HTML navigation → network-first so updates always chegam
+  if (request.mode === 'navigate' || request.destination === 'document') {
+    e.respondWith(
+      fetch(request).then(response => {
+        if (response.ok) {
+          caches.open(CACHE).then(c => c.put(request, response.clone()));
+        }
+        return response;
+      }).catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // Assets com hash (JS/CSS) → cache-first
   e.respondWith(
     caches.match(request).then(cached => {
       const network = fetch(request).then(response => {
