@@ -6,10 +6,8 @@ import LoginPage from './components/LoginPage';
 import LandingPage from './components/LandingPage';
 import CompromissosTab from './components/CompromissosTab';
 import HistoricoTab from './components/HistoricoTab';
-import KanbanTab from './components/KanbanTab';
 import AnalyticsTab from './components/AnalyticsTab';
 import TarefasTab from './components/TarefasTab';
-import FocusTimer from './components/FocusTimer';
 
 import { onAuthChange, signOut } from './services/authService';
 import { getLevelProgress, addXP } from './services/xpService';
@@ -77,17 +75,11 @@ function App() {
         {currentView === 'history' && (
           <HistoricoTab userId={userId} />
         )}
-        {currentView === 'kanban' && (
-          <KanbanTab userId={userId} />
-        )}
         {currentView === 'analytics' && (
           <AnalyticsTab userId={userId} />
         )}
         {currentView === 'tasks' && (
           <TarefasTab userId={userId} />
-        )}
-        {currentView === 'timer' && (
-          <FocusTimer dividas={[]} onXPGained={handleXPGained} />
         )}
       </main>
     </div>

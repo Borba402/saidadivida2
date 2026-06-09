@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Wallet, Home, Clock, LayoutDashboard, TrendingUp, Timer,
+  Wallet, Home, Clock, TrendingUp,
   LogOut, ChevronLeft, ChevronRight, Menu, X, Zap, CheckSquare,
   Bell, BellOff
 } from 'lucide-react';
@@ -10,10 +10,8 @@ import { isPushSupported, isSubscribed, subscribe, unsubscribe } from '../servic
 const NAV_ITEMS = [
   { id: 'home',      icon: Home,            label: 'Início' },
   { id: 'history',   icon: Clock,           label: 'Histórico' },
-  { id: 'kanban',    icon: LayoutDashboard, label: 'Kanban' },
   { id: 'analytics', icon: TrendingUp,      label: 'Analytics' },
   { id: 'tasks',     icon: CheckSquare,     label: 'Tarefas' },
-  { id: 'timer',     icon: Timer,           label: 'Foco' },
 ];
 
 export default function Sidebar({ currentView, onNavigate, onLogout, xpData, userId }) {

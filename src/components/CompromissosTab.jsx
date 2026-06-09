@@ -2,17 +2,21 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Trash2, CheckCircle2, Circle, Calendar, DollarSign,
   TrendingDown, ArrowRight, Edit3, Check, X, ChevronLeft, ChevronRight,
-  ChevronDown, ChevronUp, PlusCircle
+  ChevronDown, ChevronUp, PlusCircle, AlertTriangle, Repeat2
 } from 'lucide-react';
 import {
   getMesAtual, getMesesDisponiveis, getOrCreateCompromisso,
   updateCompromisso, listItens, createItem, deleteItem, togglePago, CATEGORIAS,
   listRendasExtra, createRendaExtra, deleteRendaExtra
 } from '../services/compromissoService';
+import {
+  materializeRecurringForMonth,
+  setBillRecurring
+} from '../services/recurring';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const EMPTY_ITEM = { nome_item: '', valor: '', data_vencimento: '', pago: false, categoria: 'Outros' };
+const EMPTY_ITEM = { nome_item: '', valor: '', data_vencimento: '', pago: false, categoria: 'Outros', recorrente: false };
 const EMPTY_RENDA = { descricao: '', valor: '' };
 
 const CAT_COLORS = {
@@ -20,14 +24,6 @@ const CAT_COLORS = {
   'Saúde': '#ef4444', 'Educação': '#06b6d4', 'Lazer': '#ec4899',
   'Vestuário': '#f97316', 'Serviços': '#6b7280', 'Dívidas': '#dc2626', 'Outros': '#9ca3af'
 };
-
-function StatusChip({ pago, vencimento }) {
-  const hoje = new Date().toISOString().split('T')[0];
-  const vencido = !pago && vencimento && vencimento < hoje;
-  if (pago) return <span className="status-chip status-chip--pago">Pago</span>;
-  if (vencido) return <span className="status-chip status-chip--vencido">Vencido</span>;
-  return <span className="status-chip status-chip--pendente">Pendente</span>;
-}
 
 export default function CompromissosTab({ userId }) {
   const meses = getMesesDisponiveis();
@@ -54,9 +50,15 @@ export default function CompromissosTab({ userId }) {
       const c = await getOrCreateCompromisso(userId, mes);
       setCompromisso(c);
       setRendaInput(c.renda_mensal?.toString() || '0');
+      
+      // Materializa as contas recorrentes primeiro
+      await materializeRecurringForMonth(userId, mes, c.id);
+      
       const [items, extras] = await Promise.all([listItens(c.id), listRendasExtra(c.id)]);
       setItens(items);
       setRendasExtra(extras);
+    } catch (err) {
+      console.error('Erro ao carregar dados do mês:', err);
     } finally {
       setLoading(false);
     }
@@ -101,10 +103,21 @@ export default function CompromissosTab({ userId }) {
     setSaving(true);
     try {
       const created = await createItem(compromisso.id, {
-        ...newItem,
+        nome_item: newItem.nome_item,
         valor: Number(newItem.valor),
-        data_vencimento: newItem.data_vencimento || null
+        data_vencimento: newItem.data_vencimento || null,
+        categoria: newItem.categoria,
+        pago: newItem.pago ?? false
       });
+
+      if (newItem.recorrente) {
+        try {
+          await setBillRecurring(created, userId);
+        } catch (recErr) {
+          console.error('Erro ao definir recorrência:', recErr);
+        }
+      }
+
       setItens(prev => [...prev, created]);
       setNewItem(EMPTY_ITEM);
       setAddForm(false);
@@ -129,6 +142,10 @@ export default function CompromissosTab({ userId }) {
   const totalExtras = rendasExtra.reduce((s, r) => s + Number(r.valor), 0);
   const totalRenda = rendaPrincipal + totalExtras;
   const saldo = totalRenda - totalGastos;
+
+  const pct = totalGastos > 0 ? Math.round((totalPago / totalGastos) * 100) : 0;
+  const circumference = 408.41;
+  const strokeDashoffset = circumference - (pct / 100) * circumference;
 
   const mesIdx = meses.indexOf(mesSelecionado);
   const prevMes = mesIdx > 0 ? meses[mesIdx - 1] : null;
@@ -164,50 +181,59 @@ export default function CompromissosTab({ userId }) {
       ) : (
         <>
           {/* Renda panel (expandable) */}
-          <div className="renda-panel">
+          <div className={`renda-panel ${!rendaExpandida ? 'renda-panel--compact' : ''}`}>
             <div className="renda-panel__main">
-              <div className="renda-panel__left">
-                <span className="balance-panel__label">Renda Principal</span>
-                {editingRenda ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '2px' }}>
-                    <input
-                      type="number"
-                      className="input-field"
-                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.9rem', width: '140px' }}
-                      value={rendaInput}
-                      onChange={e => setRendaInput(e.target.value)}
-                      autoFocus
-                      onKeyDown={e => { if (e.key === 'Enter') handleSaveRenda(); if (e.key === 'Escape') setEditingRenda(false); }}
-                    />
-                    <button className="btn-icon-plain lime-text" onClick={handleSaveRenda}><Check size={16} /></button>
-                    <button className="btn-icon-plain" onClick={() => setEditingRenda(false)}><X size={16} /></button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <span className="balance-panel__value lime-text">{fmt(rendaPrincipal)}</span>
-                    <button className="btn-icon-plain" onClick={() => setEditingRenda(true)} title="Editar renda">
-                      <Edit3 size={13} style={{ color: 'var(--text-muted)' }} />
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {rendasExtra.length > 0 && (
-                <div className="renda-panel__extras-summary">
-                  <span className="balance-panel__label">+ Rendas extras</span>
-                  <span className="balance-panel__value" style={{ color: '#22c55e' }}>+{fmt(totalExtras)}</span>
+              {!rendaExpandida ? (
+                <div className="renda-compact-summary" onClick={() => setRendaExpandida(true)} style={{ cursor: 'pointer' }}>
+                  <span className="renda-compact-summary__label">Renda Total</span>
+                  <span className="renda-compact-summary__value">{fmt(totalRenda)}</span>
                 </div>
-              )}
+              ) : (
+                <>
+                  <div className="renda-panel__left">
+                    <span className="balance-panel__label">Renda Principal</span>
+                    {editingRenda ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '2px' }}>
+                        <input
+                          type="number"
+                          className="input-field"
+                          style={{ padding: '0.3rem 0.6rem', fontSize: '0.9rem', width: '140px' }}
+                          value={rendaInput}
+                          onChange={e => setRendaInput(e.target.value)}
+                          autoFocus
+                          onKeyDown={e => { if (e.key === 'Enter') handleSaveRenda(); if (e.key === 'Escape') setEditingRenda(false); }}
+                        />
+                        <button className="btn-icon-plain lime-text" onClick={handleSaveRenda}><Check size={16} /></button>
+                        <button className="btn-icon-plain" onClick={() => setEditingRenda(false)}><X size={16} /></button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span className="balance-panel__value lime-text">{fmt(rendaPrincipal)}</span>
+                        <button className="btn-icon-plain" onClick={() => setEditingRenda(true)} title="Editar renda">
+                          <Edit3 size={13} style={{ color: 'var(--text-muted)' }} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
-              <div className="renda-panel__total">
-                <span className="balance-panel__label">Total Renda</span>
-                <span className="balance-panel__value lime-text" style={{ fontSize: '1.15rem' }}>{fmt(totalRenda)}</span>
-              </div>
+                  {rendasExtra.length > 0 && (
+                    <div className="renda-panel__extras-summary">
+                      <span className="balance-panel__label">+ Rendas extras</span>
+                      <span className="balance-panel__value" style={{ color: '#22c55e' }}>+{fmt(totalExtras)}</span>
+                    </div>
+                  )}
+
+                  <div className="renda-panel__total">
+                    <span className="balance-panel__label">Total Renda</span>
+                    <span className="balance-panel__value lime-text" style={{ fontSize: '1.15rem' }}>{fmt(totalRenda)}</span>
+                  </div>
+                </>
+              )}
 
               <button
                 className="btn-icon-plain"
                 onClick={() => setRendaExpandida(v => !v)}
-                title="Gerenciar rendas extras"
+                title={rendaExpandida ? "Recolher painel" : "Gerenciar rendas extras"}
                 style={{ marginLeft: 'auto' }}
               >
                 {rendaExpandida ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -280,29 +306,46 @@ export default function CompromissosTab({ userId }) {
             )}
           </div>
 
-          {/* Balance strip */}
-          <div className="balance-panel">
-            <div className="balance-panel__item">
-              <TrendingDown size={13} className="text-danger" style={{ marginBottom: 2 }} />
-              <span className="balance-panel__label">Total Comprometido</span>
-              <span className="balance-panel__value text-danger">{fmt(totalGastos)}</span>
+          {/* Progress Hero */}
+          <div className="progress-hero">
+            <div className="progress-ring-wrap">
+              <svg className="progress-ring-svg" viewBox="0 0 160 160">
+                <circle className="progress-ring__track" cx="80" cy="80" r="65" />
+                <circle
+                  className={`progress-ring__fill ${pct === 0 ? 'progress-ring__fill--zero' : ''}`}
+                  cx="80"
+                  cy="80"
+                  r="65"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                />
+              </svg>
+              <div className="progress-ring-center">
+                <span className={`progress-ring-center__pct ${pct === 0 ? 'progress-ring-center__pct--zero' : ''}`}>
+                  {pct}%
+                </span>
+                <span className="progress-ring-center__label">Pago</span>
+              </div>
             </div>
 
-            <div className="balance-panel__divider" />
-
-            <div className="balance-panel__item">
-              <span className="balance-panel__label">Já Pago</span>
-              <span className="balance-panel__value" style={{ color: '#22c55e' }}>{fmt(totalPago)}</span>
-            </div>
-
-            <ArrowRight size={18} className="text-muted" style={{ flexShrink: 0 }} />
-
-            <div className="balance-panel__item">
-              <DollarSign size={13} className={saldo >= 0 ? 'lime-text' : 'text-danger'} style={{ marginBottom: 2 }} />
-              <span className="balance-panel__label">Saldo Restante</span>
-              <span className={`balance-panel__value ${saldo >= 0 ? 'lime-text' : 'text-danger'}`}>
-                {fmt(saldo)}
+            <div className="progress-stats">
+              <span className="progress-stats__main">
+                Já pago <span>{fmt(totalPago)}</span> de {fmt(totalGastos)} comprometido
               </span>
+              <span className="progress-stats__secondary">
+                Restam <em>{fmt(totalGastos - totalPago)}</em> para quitar as contas do mês
+              </span>
+            </div>
+
+            <div className="progress-secondary-strip">
+              <div className="progress-secondary-strip__item">
+                <span className="progress-secondary-strip__label">Total Comprometido</span>
+                <span className="progress-secondary-strip__value text-danger">{fmt(totalGastos)}</span>
+              </div>
+              <div className="progress-secondary-strip__item">
+                <span className="progress-secondary-strip__label">Saldo Restante</span>
+                <span className="progress-secondary-strip__value" style={{ color: 'var(--text-muted)' }}>{fmt(saldo)}</span>
+              </div>
             </div>
           </div>
 
@@ -348,6 +391,31 @@ export default function CompromissosTab({ userId }) {
                     onChange={e => setNewItem(v => ({ ...v, data_vencimento: e.target.value }))} />
                 </div>
               </div>
+              
+              {/* Opções extras do item */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
+                <label className="recurring-toggle-row">
+                  <div className="recurring-toggle">
+                    <input
+                      type="checkbox"
+                      checked={newItem.recorrente || false}
+                      onChange={e => setNewItem(v => ({ ...v, recorrente: e.target.checked }))}
+                    />
+                    <span className="recurring-toggle__slider"></span>
+                  </div>
+                  <span className="recurring-toggle-row__label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Repeat2 size={14} /> Repetir todo mês
+                  </span>
+                </label>
+                
+                {!newItem.data_vencimento && (
+                  <div className="date-warning">
+                    <AlertTriangle size={13} />
+                    <span>Sem data de vencimento, lembretes não funcionarão.</span>
+                  </div>
+                )}
+              </div>
+
               {formError && <p className="text-danger text-xs" style={{ marginTop: '0.5rem' }}>{formError}</p>}
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.875rem' }}>
                 <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem 1.25rem' }} disabled={saving}>
@@ -379,7 +447,6 @@ export default function CompromissosTab({ userId }) {
                     <th>Categoria</th>
                     <th>Vencimento</th>
                     <th style={{ textAlign: 'right' }}>Valor</th>
-                    <th style={{ textAlign: 'center' }}>Status</th>
                     <th style={{ textAlign: 'center' }}>Pago</th>
                     <th></th>
                   </tr>
@@ -401,9 +468,6 @@ export default function CompromissosTab({ userId }) {
                             : <span style={{ color: 'var(--border-hover)' }}>Sem data</span>}
                         </td>
                         <td style={{ textAlign: 'right', fontWeight: 700, fontSize: '0.9rem' }}>{fmt(item.valor)}</td>
-                        <td style={{ textAlign: 'center' }}>
-                          <StatusChip pago={item.pago} vencimento={item.data_vencimento} />
-                        </td>
                         <td style={{ textAlign: 'center' }}>
                           <button className="toggle-pago-btn" onClick={() => handleToggle(item)}
                             title={item.pago ? 'Marcar como pendente' : 'Marcar como pago'}>
@@ -429,7 +493,7 @@ export default function CompromissosTab({ userId }) {
                     <td style={{ textAlign: 'right', fontWeight: 800, fontSize: '1rem', paddingTop: '0.75rem' }}>
                       {fmt(totalGastos)}
                     </td>
-                    <td colSpan={3} />
+                    <td colSpan={2} />
                   </tr>
                 </tfoot>
               </table>
