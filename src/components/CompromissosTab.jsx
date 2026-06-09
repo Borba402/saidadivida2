@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Plus, Trash2, CheckCircle2, Circle, Calendar, DollarSign,
-  TrendingDown, ArrowRight, Edit3, Check, X, ChevronLeft, ChevronRight,
-  ChevronDown, ChevronUp, PlusCircle, AlertTriangle, Repeat2
+  Plus, Trash2, CheckCircle2, Circle, Calendar,
+  Edit3, Check, X, ChevronLeft, ChevronRight,
+  ChevronDown, ChevronUp, PlusCircle, AlertTriangle, Repeat2, Save
 } from 'lucide-react';
 import {
   getMesAtual, getMesesDisponiveis, getOrCreateCompromisso,
-  updateCompromisso, listItens, createItem, deleteItem, togglePago, CATEGORIAS,
+  updateCompromisso, listItens, createItem, updateItem, deleteItem, togglePago, CATEGORIAS,
   listRendasExtra, createRendaExtra, deleteRendaExtra
 } from '../services/compromissoService';
 import {
@@ -44,16 +44,21 @@ export default function CompromissosTab({ userId }) {
   const [rendaFormError, setRendaFormError] = useState('');
   const [savingRenda, setSavingRenda] = useState(false);
 
+  // Estado de edição inline de itens
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [editItemData, setEditItemData] = useState({});
+  const [savingEdit, setSavingEdit] = useState(false);
+
   const loadMes = useCallback(async (mes) => {
     setLoading(true);
     try {
       const c = await getOrCreateCompromisso(userId, mes);
       setCompromisso(c);
       setRendaInput(c.renda_mensal?.toString() || '0');
-      
+
       // Materializa as contas recorrentes primeiro
       await materializeRecurringForMonth(userId, mes, c.id);
-      
+
       const [items, extras] = await Promise.all([listItens(c.id), listRendasExtra(c.id)]);
       setItens(items);
       setRendasExtra(extras);
@@ -72,6 +77,13 @@ export default function CompromissosTab({ userId }) {
     const updated = await updateCompromisso(compromisso.id, { renda_mensal: val });
     setCompromisso(updated);
     setEditingRenda(false);
+  };
+
+  const handleToggleRendaRecorrente = async () => {
+    if (!compromisso) return;
+    const novoValor = !compromisso.renda_recorrente;
+    const updated = await updateCompromisso(compromisso.id, { renda_recorrente: novoValor });
+    setCompromisso(updated);
   };
 
   const handleAddRendaExtra = async (e) => {
@@ -124,6 +136,43 @@ export default function CompromissosTab({ userId }) {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Iniciar edição inline
+  const handleStartEdit = (item) => {
+    setEditingItemId(item.id);
+    setEditItemData({
+      nome_item: item.nome_item,
+      valor: item.valor,
+      data_vencimento: item.data_vencimento || '',
+      categoria: item.categoria || 'Outros',
+    });
+  };
+
+  // Salvar edição inline
+  const handleSaveEdit = async (itemId) => {
+    if (!editItemData.nome_item.trim()) return;
+    if (!editItemData.valor || Number(editItemData.valor) <= 0) return;
+    setSavingEdit(true);
+    try {
+      const updated = await updateItem(itemId, {
+        nome_item: editItemData.nome_item,
+        valor: Number(editItemData.valor),
+        data_vencimento: editItemData.data_vencimento || null,
+        categoria: editItemData.categoria,
+      });
+      setItens(prev => prev.map(i => i.id === updated.id ? updated : i));
+      setEditingItemId(null);
+      setEditItemData({});
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  // Cancelar edição
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
+    setEditItemData({});
   };
 
   const handleDelete = async (id) => {
@@ -187,6 +236,11 @@ export default function CompromissosTab({ userId }) {
                 <div className="renda-compact-summary" onClick={() => setRendaExpandida(true)} style={{ cursor: 'pointer' }}>
                   <span className="renda-compact-summary__label">Renda Total</span>
                   <span className="renda-compact-summary__value">{fmt(totalRenda)}</span>
+                  {compromisso?.renda_recorrente && (
+                    <span className="renda-recorrente-badge" title="Renda recorrente ativa">
+                      <Repeat2 size={11} /> Recorrente
+                    </span>
+                  )}
                 </div>
               ) : (
                 <>
@@ -214,6 +268,21 @@ export default function CompromissosTab({ userId }) {
                         </button>
                       </div>
                     )}
+
+                    {/* Toggle renda recorrente */}
+                    <label className="recurring-toggle-row" style={{ marginTop: '0.5rem' }}>
+                      <div className="recurring-toggle">
+                        <input
+                          type="checkbox"
+                          checked={compromisso?.renda_recorrente || false}
+                          onChange={handleToggleRendaRecorrente}
+                        />
+                        <span className="recurring-toggle__slider"></span>
+                      </div>
+                      <span className="recurring-toggle-row__label" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <Repeat2 size={13} /> Receber todo mês
+                      </span>
+                    </label>
                   </div>
 
                   {rendasExtra.length > 0 && (
@@ -391,7 +460,7 @@ export default function CompromissosTab({ userId }) {
                     onChange={e => setNewItem(v => ({ ...v, data_vencimento: e.target.value }))} />
                 </div>
               </div>
-              
+
               {/* Opções extras do item */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
                 <label className="recurring-toggle-row">
@@ -407,7 +476,7 @@ export default function CompromissosTab({ userId }) {
                     <Repeat2 size={14} /> Repetir todo mês
                   </span>
                 </label>
-                
+
                 {!newItem.data_vencimento && (
                   <div className="date-warning">
                     <AlertTriangle size={13} />
@@ -448,12 +517,82 @@ export default function CompromissosTab({ userId }) {
                     <th>Vencimento</th>
                     <th style={{ textAlign: 'right' }}>Valor</th>
                     <th style={{ textAlign: 'center' }}>Pago</th>
-                    <th></th>
+                    <th style={{ textAlign: 'center' }}>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {itens.map(item => {
                     const catColor = CAT_COLORS[item.categoria] || '#9ca3af';
+                    const isEditing = editingItemId === item.id;
+
+                    if (isEditing) {
+                      // Linha em modo de edição
+                      return (
+                        <tr key={item.id} className="items-table__row items-table__row--editing">
+                          <td>
+                            <input
+                              className="input-field input-field--inline"
+                              value={editItemData.nome_item}
+                              onChange={e => setEditItemData(v => ({ ...v, nome_item: e.target.value }))}
+                              autoFocus
+                            />
+                          </td>
+                          <td>
+                            <select
+                              className="input-field input-field--inline"
+                              value={editItemData.categoria}
+                              onChange={e => setEditItemData(v => ({ ...v, categoria: e.target.value }))}
+                            >
+                              {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                          </td>
+                          <td>
+                            <input
+                              type="date"
+                              className="input-field input-field--inline"
+                              value={editItemData.data_vencimento}
+                              onChange={e => setEditItemData(v => ({ ...v, data_vencimento: e.target.value }))}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              className="input-field input-field--inline"
+                              style={{ textAlign: 'right' }}
+                              value={editItemData.valor}
+                              onChange={e => setEditItemData(v => ({ ...v, valor: e.target.value }))}
+                            />
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <button className="toggle-pago-btn" onClick={() => handleToggle(item)}
+                              title={item.pago ? 'Marcar como pendente' : 'Marcar como pago'}>
+                              {item.pago
+                                ? <CheckCircle2 size={20} style={{ color: 'var(--success)' }} />
+                                : <Circle size={20} style={{ color: 'var(--border-hover)' }} />}
+                            </button>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
+                              <button
+                                className="btn-icon lime-text"
+                                onClick={() => handleSaveEdit(item.id)}
+                                disabled={savingEdit}
+                                title="Salvar alterações"
+                              >
+                                <Save size={15} />
+                              </button>
+                              <button className="btn-icon" onClick={handleCancelEdit} title="Cancelar edição">
+                                <X size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    // Linha normal
                     return (
                       <tr key={item.id} className={`items-table__row ${item.pago ? 'items-table__row--pago' : ''}`}>
                         <td className="items-table__name">{item.nome_item}</td>
@@ -477,9 +616,14 @@ export default function CompromissosTab({ userId }) {
                           </button>
                         </td>
                         <td>
-                          <button className="btn-icon" onClick={() => handleDelete(item.id)} title="Remover item">
-                            <Trash2 size={16} />
-                          </button>
+                          <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
+                            <button className="btn-icon" onClick={() => handleStartEdit(item)} title="Editar item">
+                              <Edit3 size={15} />
+                            </button>
+                            <button className="btn-icon" onClick={() => handleDelete(item.id)} title="Remover item">
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

@@ -2282,3 +2282,42 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
       "due   tog   del";
   }
 }
+
+/* ============================================
+   EDIÇÃO INLINE DE ITENS
+   ============================================ */
+
+/* Linha em modo de edição */
+.items-table__row--editing td {
+  background: var(--bg-elevated) !important;
+  border-bottom: 1px solid var(--lime-dim) !important;
+  padding: 0.5rem 0.75rem !important;
+}
+.items-table__row--editing:first-child td:first-child,
+.items-table__row--editing td:first-child { border-left: 2px solid var(--lime-dim); }
+
+/* Inputs compactos dentro da tabela */
+.input-field--inline {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.82rem;
+  height: auto;
+  min-height: unset;
+  width: 100%;
+  border-radius: var(--radius-sm);
+}
+
+/* Badge "Recorrente" no painel compacto */
+.renda-recorrente-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background: var(--lime-dim);
+  color: var(--lime);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+

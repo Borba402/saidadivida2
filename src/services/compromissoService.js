@@ -42,15 +42,35 @@ export async function getOrCreateCompromisso(userId, mesReferencia) {
   if (fetchErr) throw fetchErr;
   if (existing) return existing;
 
+  // Mês novo: verifica se o último compromisso tem renda recorrente
+  const { data: ultimo } = await supabase
+    .from('compromissos')
+    .select('renda_mensal, renda_recorrente')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const rendaInicial = (ultimo?.renda_recorrente && ultimo?.renda_mensal)
+    ? ultimo.renda_mensal
+    : 0;
+  const recorrenteInicial = ultimo?.renda_recorrente ?? false;
+
   const { data, error } = await supabase
     .from('compromissos')
-    .insert({ user_id: userId, mes_referencia: mesReferencia, renda_mensal: 0 })
+    .insert({
+      user_id: userId,
+      mes_referencia: mesReferencia,
+      renda_mensal: rendaInicial,
+      renda_recorrente: recorrenteInicial
+    })
     .select()
     .single();
 
   if (error) throw error;
   return data;
 }
+
 
 export async function updateCompromisso(id, updates) {
   const { data, error } = await supabase
