@@ -16,9 +16,14 @@ export default function TelegramConnect({ userId, onClose }) {
 
   const handleGenerate = async () => {
     setLoading(true);
-    const t = await generateLinkToken(userId);
-    setToken(t);
-    setLoading(false);
+    try {
+      const t = await generateLinkToken(userId);
+      setToken(t);
+    } catch (e) {
+      alert('Erro ao gerar código: ' + e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCopy = () => {

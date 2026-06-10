@@ -15,7 +15,7 @@ export async function generateLinkToken(userId) {
   const token = Math.random().toString(36).substring(2, 8).toUpperCase();
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
-  await supabase.from('telegram_links').upsert({
+  const { error } = await supabase.from('telegram_links').upsert({
     user_id: userId,
     link_token: token,
     token_expires_at: expiresAt.toISOString(),
@@ -24,6 +24,7 @@ export async function generateLinkToken(userId) {
     linked_at: null,
   }, { onConflict: 'user_id' });
 
+  if (error) throw new Error(error.message);
   return token;
 }
 
