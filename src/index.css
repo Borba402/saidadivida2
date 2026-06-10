@@ -2159,13 +2159,14 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
   color: var(--lime);
 }
 .progress-stats__secondary {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
 }
 .progress-stats__secondary em {
   font-style: normal;
-  font-weight: 600;
-  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 1rem;
+  color: #f97316;
 }
 
 /* Barra horizontal de progresso dentro do hero (alternativa mobile) */
