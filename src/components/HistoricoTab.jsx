@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { History, TrendingDown, DollarSign, CheckCircle2, Calendar } from 'lucide-react';
+import { History, TrendingDown, DollarSign, CheckCircle2, Calendar, BarChart2 } from 'lucide-react';
 import { listCompromissos, listItens } from '../services/compromissoService';
+import MonthDashboard from './MonthDashboard';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 export default function HistoricoTab({ userId }) {
   const [registros, setRegistros] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dashRegistro, setDashRegistro] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,6 +73,8 @@ export default function HistoricoTab({ userId }) {
         <span className="text-muted font-medium text-sm">({mesesComDados.length} meses)</span>
       </div>
 
+      <MonthDashboard registro={dashRegistro} onClose={() => setDashRegistro(null)} />
+
       <div className="historico-list">
         {registros.map(r => (
           <div key={r.id} className="historico-card">
@@ -79,8 +83,19 @@ export default function HistoricoTab({ userId }) {
                 <h3 className="font-bold" style={{ fontSize: '1rem' }}>{r.mes_referencia}</h3>
                 <span className="text-muted text-xs">{r.count} itens</span>
               </div>
-              <div className={`historico-saldo-badge ${r.saldo >= 0 ? 'historico-saldo-badge--ok' : 'historico-saldo-badge--neg'}`}>
-                {r.saldo >= 0 ? 'Saldo positivo' : 'Saldo negativo'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {r.count > 0 && (
+                  <button
+                    className="btn btn-outline"
+                    style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                    onClick={() => setDashRegistro(r)}
+                  >
+                    <BarChart2 size={13} /> Dash
+                  </button>
+                )}
+                <div className={`historico-saldo-badge ${r.saldo >= 0 ? 'historico-saldo-badge--ok' : 'historico-saldo-badge--neg'}`}>
+                  {r.saldo >= 0 ? 'Saldo positivo' : 'Saldo negativo'}
+                </div>
               </div>
             </div>
 

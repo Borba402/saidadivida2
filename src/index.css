@@ -1166,6 +1166,108 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
 }
 
 /* ============================================
+   MONTH DASHBOARD MODAL
+   ============================================ */
+.dash-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 500;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  backdrop-filter: blur(4px);
+}
+@media (min-width: 640px) {
+  .dash-overlay { align-items: center; padding: 1.5rem; }
+}
+
+.dash-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  animation: dash-slide-up 240ms ease;
+}
+@media (min-width: 640px) {
+  .dash-modal { border-radius: var(--radius-xl); }
+}
+@keyframes dash-slide-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.dash-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.dash-ring-block {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+.dash-ring-text { display: flex; flex-direction: column; gap: 0.35rem; }
+
+.dash-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem;
+}
+.dash-metric {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.dash-metric__label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.dash-metric__value { font-size: 0.95rem; font-weight: 700; }
+
+.dash-section__title {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.dash-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.dash-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+}
+.dash-item--pago   { background: rgba(34,197,94,0.07);  }
+.dash-item--pendente { background: rgba(249,115,22,0.07); }
+.dash-item__name   { font-weight: 500; }
+.dash-item--pago   .dash-item__valor { color: #22c55e; font-weight: 700; }
+.dash-item--pendente .dash-item__valor { color: #f97316; font-weight: 700; }
+
+/* ============================================
    TAREFAS
    ============================================ */
 .tarefas-page { display: flex; flex-direction: column; gap: 1.25rem; }
