@@ -43,10 +43,21 @@ export default function LoginPage() {
       }
     } catch (err) {
       const msg = err?.message || '';
-      if (msg.includes('Invalid login')) setError('E-mail ou senha incorretos.');
-      else if (msg.includes('already registered')) setError('Este e-mail já está cadastrado. Faça login.');
-      else if (msg.includes('Email not confirmed')) setError('Confirme seu e-mail antes de entrar.');
-      else setError(msg || 'Erro ao autenticar. Tente novamente.');
+      if (!msg || msg === '{}' || msg === '[]') {
+        setError(mode === 'register'
+          ? 'Não foi possível criar a conta. Este e-mail pode já estar cadastrado.'
+          : 'Erro ao entrar. Verifique e-mail e senha.');
+      } else if (msg.includes('Invalid login') || msg.includes('invalid_credentials')) {
+        setError('E-mail ou senha incorretos.');
+      } else if (msg.includes('already registered') || msg.includes('User already registered')) {
+        setError('Este e-mail já está cadastrado. Faça login.');
+      } else if (msg.includes('Email not confirmed')) {
+        setError('Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada.');
+      } else if (msg.includes('Password should be')) {
+        setError('A senha deve ter no mínimo 6 caracteres.');
+      } else {
+        setError('Erro ao autenticar. Tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
