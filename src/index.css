@@ -53,6 +53,47 @@
 }
 
 /* ============================================
+   TEMA CLARO
+   ============================================ */
+.theme-light {
+  --bg-body:       #f0f2f5;
+  --bg-card:       #ffffff;
+  --bg-elevated:   #f8fafc;
+  --bg-input:      #ffffff;
+  --text-main:     #111827;
+  --text-muted:    #6b7280;
+  --text-secondary:#374151;
+  --border-color:  #e5e7eb;
+  --border-hover:  #d1d5db;
+  --shadow-sm:     0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:     0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg:     0 8px 32px rgba(0,0,0,0.12);
+}
+
+/* Transição suave ao trocar tema */
+*, *::before, *::after { transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease; }
+
+/* ── iOS Install Tip ───────────────────────── */
+.ios-install-tip {
+  position: fixed;
+  bottom: calc(var(--bottomnav-h) + 0.75rem);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  max-width: 320px;
+  width: calc(100% - 2rem);
+  text-align: center;
+  z-index: 9999;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+}
+.ios-install-tip p { font-size: 0.875rem; line-height: 1.6; color: var(--text-main); }
+.ios-install-tip__close { display: block; margin-top: 0.625rem; font-size: 0.75rem; color: var(--text-muted); }
+
+/* ============================================
    RESET
    ============================================ */
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
