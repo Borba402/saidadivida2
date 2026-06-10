@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
 import Sidebar from './components/Sidebar';
@@ -11,13 +11,11 @@ import TarefasTab from './components/TarefasTab';
 import TelegramConnect from './components/TelegramConnect';
 
 import { onAuthChange, signOut } from './services/authService';
-import { getLevelProgress, addXP } from './services/xpService';
 
 function App() {
   const [session, setSession] = useState(undefined); // undefined = loading
   const [showLanding, setShowLanding] = useState(true);
   const [currentView, setCurrentView] = useState('home');
-  const [xpData, setXpData] = useState(() => getLevelProgress());
   const [showTelegram, setShowTelegram] = useState(false);
 
   useEffect(() => {
@@ -33,10 +31,6 @@ function App() {
     setCurrentView('home');
     setShowLanding(true);
   };
-
-  const handleXPGained = useCallback(() => {
-    setXpData(getLevelProgress());
-  }, []);
 
   // Loading state — Supabase hasn't responded yet
   if (session === undefined) {
@@ -66,7 +60,6 @@ function App() {
         currentView={currentView}
         onNavigate={setCurrentView}
         onLogout={handleLogout}
-        xpData={xpData}
         userId={userId}
         onTelegram={() => setShowTelegram(true)}
       />

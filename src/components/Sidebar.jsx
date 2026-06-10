@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   Wallet, Home, Clock, TrendingUp,
-  LogOut, ChevronLeft, ChevronRight, Menu, X, Zap, CheckSquare,
+  LogOut, ChevronLeft, ChevronRight, Menu, X, CheckSquare,
   Bell, BellOff, Sun, Moon, Download, Send
 } from 'lucide-react';
-import { getLevelProgress } from '../services/xpService';
 import { isPushSupported, isSubscribed, subscribe, unsubscribe } from '../services/notificationService';
 
 const NAV_ITEMS = [
@@ -20,7 +19,7 @@ function initTheme() {
   return saved;
 }
 
-export default function Sidebar({ currentView, onNavigate, onLogout, xpData, userId, onTelegram }) {
+export default function Sidebar({ currentView, onNavigate, onLogout, userId, onTelegram }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifEnabled, setNotifEnabled] = useState(false);
@@ -29,7 +28,6 @@ export default function Sidebar({ currentView, onNavigate, onLogout, xpData, use
   const [installPrompt, setInstallPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSTip, setShowIOSTip] = useState(false);
-  const { xp, level, levelXP, neededXP, percent } = xpData || getLevelProgress();
 
   useEffect(() => {
     if (isPushSupported()) isSubscribed().then(setNotifEnabled);
@@ -143,27 +141,6 @@ export default function Sidebar({ currentView, onNavigate, onLogout, xpData, use
           ))}
         </nav>
 
-        {/* XP / Level block */}
-        <div className="sidebar__xp">
-          {collapsed ? (
-            <div className="sidebar__xp-pill" title={`Nível ${level} — ${xp} XP`}>
-              <Zap size={14} className="lime-text" />
-              <span className="lime-text font-bold" style={{ fontSize: '0.75rem' }}>{level}</span>
-            </div>
-          ) : (
-            <div className="sidebar__xp-full">
-              <div className="sidebar__xp-row">
-                <span className="text-muted" style={{ fontSize: '0.7rem' }}>NÍVEL {level}</span>
-                <span className="lime-text font-bold" style={{ fontSize: '0.7rem' }}>{xp} XP</span>
-              </div>
-              <div className="xp-track">
-                <div className="xp-fill" style={{ width: `${Math.round(percent * 100)}%` }} />
-              </div>
-              <span className="text-muted" style={{ fontSize: '0.65rem' }}>{levelXP}/{neededXP} para o próximo nível</span>
-            </div>
-          )}
-        </div>
-
         {/* Telegram */}
         <div
           role="button"
@@ -258,6 +235,14 @@ export default function Sidebar({ currentView, onNavigate, onLogout, xpData, use
             <span>{label}</span>
           </button>
         ))}
+        <button
+          className="mobile-nav-btn"
+          onClick={onTelegram}
+          style={{ color: '#229ED9' }}
+        >
+          <Send size={20} />
+          <span>Bot</span>
+        </button>
       </nav>
     </>
   );
