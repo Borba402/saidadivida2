@@ -3,8 +3,7 @@ import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
-import { TrendingUp, DollarSign, Zap, Award, PieChart } from 'lucide-react';
-import { getXP, getLevel, getLevelProgress } from '../services/xpService';
+import { TrendingUp, DollarSign, PieChart } from 'lucide-react';
 import { listCompromissos, listItens, getMesAtual } from '../services/compromissoService';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -32,10 +31,6 @@ const CAT_COLORS = {
 };
 
 export default function AnalyticsTab({ userId }) {
-  const xp = getXP();
-  const level = getLevel(xp);
-  const { levelXP, neededXP, percent } = getLevelProgress();
-
   const [compromissos, setCompromissos] = useState([]);
   const [allItens, setAllItens] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -125,39 +120,6 @@ export default function AnalyticsTab({ userId }) {
             <p className="kpi-card__value" style={{ color: '#f59e0b' }}>{fmt(totalComprometidoAtual)}</p>
           </div>
         </div>
-        <div className="kpi-card">
-          <div className="kpi-card__icon" style={{ background: 'rgba(163,230,53,0.1)' }}>
-            <Zap size={20} className="lime-text" />
-          </div>
-          <div>
-            <p className="kpi-card__label">XP Acumulado</p>
-            <p className="kpi-card__value lime-text">{xp} XP</p>
-          </div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-card__icon" style={{ background: 'rgba(163,230,53,0.1)' }}>
-            <Award size={20} className="lime-text" />
-          </div>
-          <div>
-            <p className="kpi-card__label">Nível Atual</p>
-            <p className="kpi-card__value lime-text">Nível {level}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* XP Progress */}
-      <div className="analytics-card">
-        <div className="analytics-card__title"><Award size={16} className="lime-text" /> Progresso de Nível</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span className="text-muted" style={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>Nível {level}</span>
-          <div className="xp-track" style={{ flex: 1, height: '10px' }}>
-            <div className="xp-fill" style={{ width: `${Math.round(percent * 100)}%`, height: '100%' }} />
-          </div>
-          <span className="lime-text font-bold" style={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>Nível {level + 1}</span>
-        </div>
-        <p className="text-muted" style={{ fontSize: '0.75rem', marginTop: '0.5rem' }}>
-          {levelXP} / {neededXP} XP para o próximo nível
-        </p>
       </div>
 
       {/* Saldo por mês */}
