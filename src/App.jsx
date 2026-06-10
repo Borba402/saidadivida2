@@ -8,6 +8,7 @@ import CompromissosTab from './components/CompromissosTab';
 import HistoricoTab from './components/HistoricoTab';
 import AnalyticsTab from './components/AnalyticsTab';
 import TarefasTab from './components/TarefasTab';
+import TelegramConnect from './components/TelegramConnect';
 
 import { onAuthChange, signOut } from './services/authService';
 import { getLevelProgress, addXP } from './services/xpService';
@@ -17,6 +18,7 @@ function App() {
   const [showLanding, setShowLanding] = useState(true);
   const [currentView, setCurrentView] = useState('home');
   const [xpData, setXpData] = useState(() => getLevelProgress());
+  const [showTelegram, setShowTelegram] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthChange((_event, s) => {
@@ -66,7 +68,12 @@ function App() {
         onLogout={handleLogout}
         xpData={xpData}
         userId={userId}
+        onTelegram={() => setShowTelegram(true)}
       />
+
+      {showTelegram && (
+        <TelegramConnect userId={userId} onClose={() => setShowTelegram(false)} />
+      )}
 
       <main className="app-main">
         {currentView === 'home' && (

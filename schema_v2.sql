@@ -108,3 +108,26 @@ ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "push_sub_user" ON push_subscriptions;
 CREATE POLICY "push_sub_user" ON push_subscriptions
   FOR ALL USING (auth.uid() = user_id);
+
+-- Tabela de vinculação Telegram
+CREATE TABLE IF NOT EXISTS telegram_links (
+  id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id           UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
+  telegram_chat_id  TEXT,
+  telegram_username TEXT,
+  link_token        TEXT,
+  token_expires_at  TIMESTAMPTZ,
+  linked_at         TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE telegram_links ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "telegram_links_user" ON telegram_links;
+CREATE POLICY "telegram_links_user" ON telegram_links
+  FOR ALL USING (auth.uid() = user_id);
+
+-- Service role pode ler/escrever (para o webhook Vercel)
+DROP POLICY IF EXISTS "telegram_links_service" ON telegram_links;
+CREATE POLICY "telegram_links_service" ON telegram_links
+  FOR ALL USING (true) WITH CHECK (true);

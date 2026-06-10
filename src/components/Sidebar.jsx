@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Wallet, Home, Clock, TrendingUp,
   LogOut, ChevronLeft, ChevronRight, Menu, X, Zap, CheckSquare,
-  Bell, BellOff, Sun, Moon, Download
+  Bell, BellOff, Sun, Moon, Download, Send
 } from 'lucide-react';
 import { getLevelProgress } from '../services/xpService';
 import { isPushSupported, isSubscribed, subscribe, unsubscribe } from '../services/notificationService';
@@ -20,7 +20,7 @@ function initTheme() {
   return saved;
 }
 
-export default function Sidebar({ currentView, onNavigate, onLogout, xpData, userId }) {
+export default function Sidebar({ currentView, onNavigate, onLogout, xpData, userId, onTelegram }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifEnabled, setNotifEnabled] = useState(false);
@@ -162,6 +162,21 @@ export default function Sidebar({ currentView, onNavigate, onLogout, xpData, use
               <span className="text-muted" style={{ fontSize: '0.65rem' }}>{levelXP}/{neededXP} para o próximo nível</span>
             </div>
           )}
+        </div>
+
+        {/* Telegram */}
+        <div
+          role="button"
+          tabIndex={0}
+          data-label={collapsed ? '' : 'Telegram Bot'}
+          className="sidebar__logout"
+          onClick={onTelegram}
+          onKeyDown={e => e.key === 'Enter' && onTelegram()}
+          title="Conectar Telegram"
+          aria-label="Conectar Telegram"
+          style={{ color: '#229ED9' }}
+        >
+          <Send size={18} style={{ flexShrink: 0 }} />
         </div>
 
         {/* Instalar App */}
