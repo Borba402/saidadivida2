@@ -81,3 +81,12 @@ export async function stopRecurring(recurringId) {
     .update({ active: false }).eq('id', recurringId);
   if (error) throw error;
 }
+
+export async function listRecurringBills(userId) {
+  const { data } = await supabase
+    .from('recurring_bills')
+    .select('id, name')
+    .eq('user_id', userId)
+    .eq('active', true);
+  return data || [];
+}

@@ -11,7 +11,9 @@ import {
 } from '../services/compromissoService';
 import {
   materializeRecurringForMonth,
-  setBillRecurring
+  setBillRecurring,
+  stopRecurring,
+  listRecurringBills,
 } from '../services/recurring';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -67,6 +69,7 @@ export default function CompromissosTab({ userId }) {
   const [editingItemId, setEditingItemId] = useState(null);
   const [editItemData, setEditItemData] = useState({});
   const [savingEdit, setSavingEdit] = useState(false);
+  const [recurringBills, setRecurringBills] = useState([]);
 
   const loadMes = useCallback(async (mes) => {
     setLoading(true);
@@ -78,9 +81,14 @@ export default function CompromissosTab({ userId }) {
       // Materializa as contas recorrentes primeiro
       await materializeRecurringForMonth(userId, mes, c.id);
 
-      const [items, extras] = await Promise.all([listItens(c.id), listRendasExtra(c.id)]);
+      const [items, extras, recurring] = await Promise.all([
+        listItens(c.id),
+        listRendasExtra(c.id),
+        listRecurringBills(userId),
+      ]);
       setItens(items);
       setRendasExtra(extras);
+      setRecurringBills(recurring);
     } catch (err) {
       console.error('Erro ao carregar dados do mês:', err);
     } finally {
@@ -160,11 +168,14 @@ export default function CompromissosTab({ userId }) {
   // Iniciar edição inline
   const handleStartEdit = (item) => {
     setEditingItemId(item.id);
+    const rb = recurringBills.find(r => r.name === item.nome_item);
     setEditItemData({
       nome_item: item.nome_item,
       valor: item.valor,
       data_vencimento: item.data_vencimento || '',
       categoria: item.categoria || 'Outros',
+      recorrente: !!rb,
+      recurringId: rb?.id || null,
     });
   };
 
@@ -180,6 +191,18 @@ export default function CompromissosTab({ userId }) {
         data_vencimento: editItemData.data_vencimento || null,
         categoria: editItemData.categoria,
       });
+
+      // Sync recorrência
+      const wasRecurring = !!editItemData.recurringId;
+      const wantsRecurring = !!editItemData.recorrente;
+      if (!wasRecurring && wantsRecurring) {
+        const rb = await setBillRecurring(updated, userId);
+        setRecurringBills(prev => [...prev, { id: rb.id, name: rb.name }]);
+      } else if (wasRecurring && !wantsRecurring) {
+        await stopRecurring(editItemData.recurringId);
+        setRecurringBills(prev => prev.filter(r => r.id !== editItemData.recurringId));
+      }
+
       setItens(prev => prev.map(i => i.id === updated.id ? updated : i));
       setEditingItemId(null);
       setEditItemData({});
@@ -574,7 +597,8 @@ export default function CompromissosTab({ userId }) {
                     if (isEditing) {
                       // Linha em modo de edição
                       return (
-                        <tr key={item.id} className="items-table__row items-table__row--editing">
+                        <React.Fragment key={item.id}>
+                        <tr className="items-table__row items-table__row--editing">
                           <td>
                             <input
                               className="input-field input-field--inline"
@@ -635,6 +659,24 @@ export default function CompromissosTab({ userId }) {
                             </div>
                           </td>
                         </tr>
+                        <tr className="items-table__row--editing">
+                          <td colSpan={6} style={{ padding: '0.4rem 0.75rem 0.75rem', borderTop: 'none' }}>
+                            <label className="recurring-toggle-row" style={{ gap: '0.5rem' }}>
+                              <div className="recurring-toggle">
+                                <input
+                                  type="checkbox"
+                                  checked={editItemData.recorrente || false}
+                                  onChange={e => setEditItemData(v => ({ ...v, recorrente: e.target.checked }))}
+                                />
+                                <span className="recurring-toggle__slider"></span>
+                              </div>
+                              <span className="recurring-toggle-row__label" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.82rem' }}>
+                                <Repeat2 size={13} /> Repetir todo mês
+                              </span>
+                            </label>
+                          </td>
+                        </tr>
+                        </React.Fragment>
                       );
                     }
 
