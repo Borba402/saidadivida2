@@ -230,7 +230,7 @@ export default function Sidebar({ currentView, onNavigate, onLogout, userId, onT
           role="button"
           tabIndex={0}
           data-label={collapsed ? '' : 'Sair'}
-          className="sidebar__logout"
+          className="sidebar__logout sidebar__logout--danger"
           onClick={onLogout}
           onKeyDown={e => e.key === 'Enter' && onLogout()}
           title="Sair"

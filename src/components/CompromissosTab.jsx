@@ -616,7 +616,7 @@ export default function CompromissosTab({ userId }) {
                               title={item.pago ? 'Marcar como pendente' : 'Marcar como pago'}>
                               {item.pago
                                 ? <CheckCircle2 size={20} style={{ color: 'var(--success)' }} />
-                                : <Circle size={20} style={{ color: 'var(--border-hover)' }} />}
+                                : <Circle size={20} style={{ color: 'var(--text-muted)' }} />}
                             </button>
                           </td>
                           <td>
@@ -672,7 +672,7 @@ export default function CompromissosTab({ userId }) {
                             title={item.pago ? 'Marcar como pendente' : 'Marcar como pago'}>
                             {item.pago
                               ? <CheckCircle2 size={20} style={{ color: 'var(--success)' }} />
-                              : <Circle size={20} style={{ color: 'var(--border-hover)' }} />}
+                              : <Circle size={20} style={{ color: 'var(--text-muted)' }} />}
                           </button>
                         </td>
                         <td>
@@ -680,7 +680,7 @@ export default function CompromissosTab({ userId }) {
                             <button className="btn-icon" onClick={() => handleStartEdit(item)} title="Editar item">
                               <Edit3 size={15} />
                             </button>
-                            <button className="btn-icon" onClick={() => handleDelete(item.id)} title="Remover item">
+                            <button className="btn-icon btn-icon--delete" onClick={() => handleDelete(item.id)} title="Remover item">
                               <Trash2 size={15} />
                             </button>
                           </div>
