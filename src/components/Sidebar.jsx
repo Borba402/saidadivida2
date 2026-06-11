@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Wallet, Home, Clock, TrendingUp,
   LogOut, ChevronLeft, ChevronRight, Menu, X, CheckSquare,
-  Bell, BellOff, Sun, Moon, Download, Send
+  Bell, BellOff, Sun, Moon, Download, Send, BookOpen
 } from 'lucide-react';
 import { isPushSupported, isSubscribed, subscribe, unsubscribe } from '../services/notificationService';
 
@@ -19,7 +19,7 @@ function initTheme() {
   return saved;
 }
 
-export default function Sidebar({ currentView, onNavigate, onLogout, userId, onTelegram }) {
+export default function Sidebar({ currentView, onNavigate, onLogout, userId, onTelegram, onShowTour }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifEnabled, setNotifEnabled] = useState(false);
@@ -130,6 +130,7 @@ export default function Sidebar({ currentView, onNavigate, onLogout, userId, onT
               role="button"
               tabIndex={0}
               data-label={collapsed ? '' : label}
+              data-tour={`nav-${id}`}
               className={`sidebar__item ${currentView === id ? 'sidebar__item--active' : ''}`}
               onClick={() => handleNav(id)}
               onKeyDown={e => e.key === 'Enter' && handleNav(id)}
@@ -140,6 +141,21 @@ export default function Sidebar({ currentView, onNavigate, onLogout, userId, onT
             </div>
           ))}
         </nav>
+
+        {/* Ver tutorial */}
+        <div
+          role="button"
+          tabIndex={0}
+          data-label={collapsed ? '' : 'Ver Tutorial'}
+          className="sidebar__logout"
+          onClick={onShowTour}
+          onKeyDown={e => e.key === 'Enter' && onShowTour()}
+          title="Ver tutorial"
+          aria-label="Ver tutorial"
+          style={{ color: 'var(--text-muted)' }}
+        >
+          <BookOpen size={18} style={{ flexShrink: 0 }} />
+        </div>
 
         {/* Telegram */}
         <div
@@ -228,6 +244,7 @@ export default function Sidebar({ currentView, onNavigate, onLogout, userId, onT
         {NAV_ITEMS.map(({ id, icon: Icon, label }) => (
           <button
             key={id}
+            data-tour={`nav-${id}`}
             className={`mobile-nav-btn ${currentView === id ? 'mobile-nav-btn--active' : ''}`}
             onClick={() => handleNav(id)}
           >
@@ -236,6 +253,7 @@ export default function Sidebar({ currentView, onNavigate, onLogout, userId, onT
           </button>
         ))}
         <button
+          data-tour="nav-telegram"
           className="mobile-nav-btn"
           onClick={onTelegram}
           style={{ color: '#229ED9' }}

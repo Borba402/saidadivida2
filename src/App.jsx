@@ -9,6 +9,7 @@ import HistoricoTab from './components/HistoricoTab';
 import AnalyticsTab from './components/AnalyticsTab';
 import TarefasTab from './components/TarefasTab';
 import TelegramConnect from './components/TelegramConnect';
+import OnboardingTour from './components/OnboardingTour';
 
 import { onAuthChange, signOut } from './services/authService';
 
@@ -17,10 +18,14 @@ function App() {
   const [showLanding, setShowLanding] = useState(true);
   const [currentView, setCurrentView] = useState('home');
   const [showTelegram, setShowTelegram] = useState(false);
+  const [showTour, setShowTour] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthChange((_event, s) => {
       setSession(s);
+      if (s && !localStorage.getItem('onboarding_done')) {
+        setShowTour(true);
+      }
     });
     return unsub;
   }, []);
@@ -62,10 +67,18 @@ function App() {
         onLogout={handleLogout}
         userId={userId}
         onTelegram={() => setShowTelegram(true)}
+        onShowTour={() => setShowTour(true)}
       />
 
       {showTelegram && (
         <TelegramConnect userId={userId} onClose={() => setShowTelegram(false)} />
+      )}
+
+      {showTour && (
+        <OnboardingTour onFinish={() => {
+          localStorage.setItem('onboarding_done', '1');
+          setShowTour(false);
+        }} />
       )}
 
       <main className="app-main">

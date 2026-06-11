@@ -203,7 +203,7 @@ export default function CompromissosTab({ userId }) {
   return (
     <div className="compromissos-page">
       {/* Month navigator */}
-      <div className="month-nav">
+      <div className="month-nav" data-tour="month-nav">
         <button className="month-nav-arrow" onClick={() => prevMes && setMesSelecionado(prevMes)} disabled={!prevMes}>
           <ChevronLeft size={18} />
         </button>
@@ -376,7 +376,7 @@ export default function CompromissosTab({ userId }) {
           </div>
 
           {/* Progress Hero */}
-          <div className="progress-hero">
+          <div className="progress-hero" data-tour="progress-ring">
             <div className="progress-ring-wrap">
               <svg className="progress-ring-svg" viewBox="0 0 160 160">
                 <circle className="progress-ring__track" cx="80" cy="80" r="65" />
@@ -425,6 +425,7 @@ export default function CompromissosTab({ userId }) {
               <span className="text-muted font-medium text-sm" style={{ marginLeft: '0.5rem' }}>({itens.length} itens)</span>
             </h3>
             <button
+              data-tour="new-item"
               className="btn btn-primary"
               style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
               onClick={() => { setAddForm(v => !v); setFormError(''); }}
