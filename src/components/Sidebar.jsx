@@ -161,6 +161,7 @@ export default function Sidebar({ currentView, onNavigate, onLogout, userId, onT
         <div
           role="button"
           tabIndex={0}
+          data-tour="nav-telegram"
           data-label={collapsed ? '' : 'Telegram Bot'}
           className="sidebar__logout"
           onClick={onTelegram}
@@ -252,15 +253,6 @@ export default function Sidebar({ currentView, onNavigate, onLogout, userId, onT
             <span>{label}</span>
           </button>
         ))}
-        <button
-          data-tour="nav-telegram"
-          className="mobile-nav-btn"
-          onClick={onTelegram}
-          style={{ color: '#229ED9' }}
-        >
-          <Send size={20} />
-          <span>Bot</span>
-        </button>
       </nav>
     </>
   );

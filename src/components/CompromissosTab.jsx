@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Plus, Trash2, CheckCircle2, Circle, Calendar,
   Edit3, Check, X, ChevronLeft, ChevronRight,
-  ChevronDown, ChevronUp, PlusCircle, AlertTriangle, Repeat2, Save
+  ChevronDown, ChevronUp, PlusCircle, AlertTriangle, Repeat2, Save, Lightbulb
 } from 'lucide-react';
 import {
   getMesAtual, getMesesDisponiveis, getOrCreateCompromisso,
@@ -25,6 +25,23 @@ const CAT_COLORS = {
   'Vestuário': '#f97316', 'Serviços': '#6b7280', 'Dívidas': '#dc2626', 'Outros': '#9ca3af'
 };
 
+function SkeletonHome() {
+  return (
+    <div className="skeleton-page">
+      <div className="skeleton skeleton-month" />
+      <div className="skeleton skeleton-renda" />
+      <div className="skeleton skeleton-ring" />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="skeleton skeleton-header" />
+        <div className="skeleton" style={{ width: 100, height: 34, borderRadius: 'var(--radius-full)' }} />
+      </div>
+      {[1,2,3].map(i => <div key={i} className="skeleton skeleton-item" />)}
+    </div>
+  );
+}
+
+const SWIPE_THRESHOLD = 80;
+
 export default function CompromissosTab({ userId }) {
   const meses = getMesesDisponiveis();
   const [mesSelecionado, setMesSelecionado] = useState(getMesAtual());
@@ -33,6 +50,8 @@ export default function CompromissosTab({ userId }) {
   const [rendasExtra, setRendasExtra] = useState([]);
   const [loading, setLoading] = useState(false);
   const [addForm, setAddForm] = useState(false);
+  const [swipeX, setSwipeX] = useState({});
+  const touchStartX = useRef({});
   const [newItem, setNewItem] = useState(EMPTY_ITEM);
   const [editingRenda, setEditingRenda] = useState(false);
   const [rendaInput, setRendaInput] = useState('');
@@ -185,6 +204,26 @@ export default function CompromissosTab({ userId }) {
     setItens(prev => prev.map(i => i.id === updated.id ? updated : i));
   };
 
+  const handleSwipeStart = (id, e) => {
+    touchStartX.current[id] = e.touches[0].clientX;
+  };
+
+  const handleSwipeMove = (id, e) => {
+    const start = touchStartX.current[id];
+    if (start === undefined) return;
+    const dx = e.touches[0].clientX - start;
+    if (dx > 0) {
+      setSwipeX(prev => ({ ...prev, [id]: Math.min(dx, SWIPE_THRESHOLD + 30) }));
+    }
+  };
+
+  const handleSwipeEnd = async (item) => {
+    const dx = swipeX[item.id] || 0;
+    if (dx >= SWIPE_THRESHOLD) await handleToggle(item);
+    setSwipeX(prev => ({ ...prev, [item.id]: 0 }));
+    delete touchStartX.current[item.id];
+  };
+
   const totalGastos = itens.reduce((s, i) => s + Number(i.valor), 0);
   const totalPago = itens.reduce((s, i) => s + (i.pago ? Number(i.valor) : 0), 0);
   const rendaPrincipal = Number(compromisso?.renda_mensal ?? 0);
@@ -224,9 +263,7 @@ export default function CompromissosTab({ userId }) {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center" style={{ padding: '4rem', color: 'var(--text-muted)' }}>
-          Carregando...
-        </div>
+        <SkeletonHome />
       ) : (
         <>
           {/* Renda panel (expandable) */}
@@ -420,10 +457,10 @@ export default function CompromissosTab({ userId }) {
 
           {/* Items table header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-            <h3 className="font-bold" style={{ fontSize: '1rem' }}>
-              Itens de {mesSelecionado}
-              <span className="text-muted font-medium text-sm" style={{ marginLeft: '0.5rem' }}>({itens.length} itens)</span>
-            </h3>
+            <div>
+              <h3 className="section-title">Itens do mês</h3>
+              <span className="section-label">{mesSelecionado} · {itens.length} {itens.length === 1 ? 'item' : 'itens'}</span>
+            </div>
             <button
               data-tour="new-item"
               className="btn btn-primary"
@@ -501,12 +538,20 @@ export default function CompromissosTab({ userId }) {
 
           {/* Items table */}
           {itens.length === 0 && !addForm ? (
-            <div className="empty-state">
-              <Calendar size={40} className="text-muted" />
-              <p className="text-muted text-sm">Nenhum item cadastrado em {mesSelecionado}.</p>
-              <button className="btn btn-primary" style={{ marginTop: '0.5rem' }} onClick={() => setAddForm(true)}>
-                <Plus size={15} /> Adicionar primeiro item
+            <div className="empty-state-rich">
+              <div className="empty-state-rich__circle">
+                <Calendar size={36} className="lime-text" />
+              </div>
+              <p className="empty-state-rich__title">Nenhuma conta em {mesSelecionado}</p>
+              <p className="empty-state-rich__desc">
+                Adicione suas contas e despesas do mês para acompanhar seu progresso financeiro.
+              </p>
+              <button className="btn btn-primary" style={{ padding: '0.65rem 1.5rem', fontSize: '0.9rem' }} onClick={() => setAddForm(true)}>
+                <Plus size={16} /> Adicionar primeira conta
               </button>
+              <p className="empty-state-rich__tip">
+                <Lightbulb size={13} /> Ative "Repetir todo mês" em contas fixas como aluguel e luz.
+              </p>
             </div>
           ) : itens.length > 0 ? (
             <div className="items-table-wrap">
@@ -594,8 +639,22 @@ export default function CompromissosTab({ userId }) {
                     }
 
                     // Linha normal
+                    const dx = swipeX[item.id] || 0;
+                    const swipeProgress = Math.min(dx / SWIPE_THRESHOLD, 1);
+                    const swipeColor = item.pago ? '239,68,68' : '34,197,94';
                     return (
-                      <tr key={item.id} className={`items-table__row ${item.pago ? 'items-table__row--pago' : ''}`}>
+                      <tr
+                        key={item.id}
+                        className={`items-table__row ${item.pago ? 'items-table__row--pago' : ''}`}
+                        onTouchStart={e => handleSwipeStart(item.id, e)}
+                        onTouchMove={e => handleSwipeMove(item.id, e)}
+                        onTouchEnd={() => handleSwipeEnd(item)}
+                        style={{
+                          transform: `translateX(${dx}px)`,
+                          transition: dx === 0 ? 'transform 0.25s ease' : 'none',
+                          boxShadow: dx > 0 ? `inset ${dx + 20}px 0 ${dx}px -${dx * 0.8}px rgba(${swipeColor},${swipeProgress * 0.18})` : undefined,
+                        }}
+                      >
                         <td className="items-table__name">{item.nome_item}</td>
                         <td>
                           <span className="cat-badge" style={{ background: `${catColor}18`, color: catColor, border: `1px solid ${catColor}30` }}>
