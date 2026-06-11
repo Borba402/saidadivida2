@@ -17,7 +17,7 @@ const STEPS = [
     target: '[data-tour="progress-ring"]',
     title: 'Painel de Progresso',
     desc: 'O anel mostra quanto você já pagou do total comprometido. Quanto mais verde, melhor! Abaixo você vê o valor restante.',
-    position: 'bottom',
+    position: 'top',
   },
   {
     target: '[data-tour="new-item"]',
@@ -57,6 +57,8 @@ const STEPS = [
 ];
 
 const PAD = 10;
+const BOTTOM_NAV_H = 72; // mobile bottom nav height
+const TOOLTIP_H = 190;  // estimated tooltip height
 
 export default function OnboardingTour({ onFinish }) {
   const [step, setStep] = useState(0);
@@ -100,17 +102,27 @@ export default function OnboardingTour({ onFinish }) {
   } else {
     const centerX = rect.left + rect.width / 2;
     const left = Math.max(16, Math.min(centerX - tooltipW / 2, vw - tooltipW - 16));
-    if (current.position === 'top') {
+
+    const spaceBelow = vh - BOTTOM_NAV_H - (rect.bottom + PAD + 12);
+    const spaceAbove = rect.top - PAD - 12;
+    const preferTop = current.position === 'top' || spaceBelow < TOOLTIP_H;
+
+    if (preferTop && spaceAbove >= TOOLTIP_H) {
+      // Above the element
       tooltipStyle = {
         position: 'fixed',
         bottom: vh - (rect.top - PAD - 12),
         left,
         width: tooltipW,
+        maxHeight: spaceAbove - 8,
+        overflowY: 'auto',
       };
     } else {
+      // Below the element — clamped above bottom nav
+      const top = rect.bottom + PAD + 12;
       tooltipStyle = {
         position: 'fixed',
-        top: rect.bottom + PAD + 12,
+        top: Math.min(top, vh - BOTTOM_NAV_H - TOOLTIP_H - 8),
         left,
         width: tooltipW,
       };
