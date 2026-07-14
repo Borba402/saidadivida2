@@ -3051,19 +3051,6 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
   border-top: 1px solid var(--sdd-border);
   font-weight: 600;
 }
-.metric-detail-divider {
-  height: 1px;
-  background: var(--sdd-border);
-  margin: 0.2rem 0;
-}
-.metric-detail-section {
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--sdd-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  margin: 0;
-}
 
 /* Ghost-sm button for metric detail actions */
 .btn-ghost-sm {
@@ -3949,5 +3936,101 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
 @media (prefers-reduced-motion: reduce) {
   .items-table__row { transition: none !important; }
   .item-sheet { animation: none !important; }
+}
+
+/* ============================================
+   FASE 15 — Descoberta de funcionalidades
+   ============================================ */
+
+/* ── Renda do mês clicável no hero mobile ── */
+.hero-renda-trigger {
+  display: block;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 130ms;
+}
+.hero-renda-trigger:hover { border-color: var(--sdd-text-muted); }
+.hero-renda-trigger:focus-visible { outline: 2px solid var(--sdd-accent-strong); outline-offset: 2px; }
+.hero-renda-trigger .metric-card__value--empty { justify-content: center; }
+.hero-renda-trigger .hero-card__footer { margin: 0; padding: 0; border: none; }
+
+/* ── Card "Renda do mês" como botão ── */
+.metric-card--btn {
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+  transition: border-color 130ms;
+}
+.metric-card--btn:hover { border-color: var(--sdd-text-muted); }
+.metric-card--btn:focus-visible { outline: 2px solid var(--sdd-accent-strong); outline-offset: 2px; }
+
+.metric-card__value--empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--sdd-accent-strong);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* ── Botão "Adicionar renda extra" (sheet de renda) ── */
+.renda-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1.5px dashed var(--sdd-accent-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--sdd-accent-strong);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms;
+}
+.renda-add-btn:hover { background: var(--lime-dim); }
+
+/* ── Banner de descoberta do Telegram (Início) ── */
+.telegram-discovery-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 1rem;
+  background: var(--sdd-surface);
+  border: 1px solid var(--sdd-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 1rem;
+}
+.telegram-discovery-banner__text {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--sdd-text);
+}
+@media (max-width: 480px) {
+  .telegram-discovery-banner { flex-wrap: wrap; }
+  .telegram-discovery-banner__text { flex-basis: 100%; }
+}
+
+/* ── Pill de status Telegram no menu do perfil ── */
+.telegram-status-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  background: var(--sdd-surface-2);
+  color: var(--sdd-text-muted);
+  border: 1px solid var(--sdd-border);
+  white-space: nowrap;
+}
+.telegram-status-pill--connected {
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--sdd-positive);
+  border-color: rgba(34, 197, 94, 0.3);
 }
 

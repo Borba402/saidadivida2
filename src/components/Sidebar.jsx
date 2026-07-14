@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Wallet, Home, Clock, TrendingUp, CheckSquare,
   LogOut, ChevronLeft, ChevronRight, Plus,
-  Settings, HelpCircle, MoreHorizontal, Download,
+  Settings, HelpCircle, MoreHorizontal, Download, Sun, Moon, Send,
 } from 'lucide-react';
 import { isPushSupported, isSubscribed, subscribe, unsubscribe } from '../services/notificationService';
 import { getCurrentTheme, setTheme as persistTheme } from '../lib/theme';
+import { getTelegramLink } from '../services/telegramService';
 import AjustesModal from './AjustesModal';
 
 const NAV_ITEMS = [
@@ -71,6 +72,7 @@ export default function Sidebar({
   const [ajustesOpen, setAjustesOpen]     = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const [telegramLinked, setTelegramLinked]   = useState(false);
 
   const profileRef = useRef(null);
 
@@ -78,6 +80,11 @@ export default function Sidebar({
   useEffect(() => {
     if (isPushSupported()) isSubscribed().then(setNotifEnabled);
   }, []);
+
+  // Fase 15 — status do Telegram (pill no menu do perfil)
+  useEffect(() => {
+    if (userId) getTelegramLink(userId).then(link => setTelegramLinked(!!link));
+  }, [userId]);
 
   // PWA install prompt
   useEffect(() => {
@@ -342,6 +349,30 @@ export default function Sidebar({
 
             <div className="mobile-sheet__divider" />
 
+            {/* Modo escuro — toggle inline, sem abrir nada */}
+            <div className="ajustes-row" style={{ margin: '0 0 0.35rem' }}>
+              <div className="ajustes-row__info">
+                {theme === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
+                <span>Modo escuro</span>
+              </div>
+              <label className="recurring-toggle" aria-label="Alternar tema">
+                <input type="checkbox" checked={theme === 'dark'} onChange={handleToggleTheme} />
+                <span className="recurring-toggle__slider" />
+              </label>
+            </div>
+
+            {/* Telegram Bot — status à direita, abre o fluxo existente */}
+            <button className="mobile-sheet__item" style={{ justifyContent: 'space-between' }}
+              onClick={() => { setMobileSheetOpen(false); onTelegram(); }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Send size={17} />
+                <span>Telegram Bot</span>
+              </span>
+              {telegramLinked
+                ? <span className="telegram-status-pill telegram-status-pill--connected">Conectado</span>
+                : <span className="telegram-status-pill">Configurar</span>}
+            </button>
+
             <button className="mobile-sheet__item" onClick={() => { setMobileSheetOpen(false); setAjustesOpen(true); }}>
               <Settings size={17} />
               <span>Ajustes</span>
@@ -376,8 +407,6 @@ export default function Sidebar({
       <AjustesModal
         open={ajustesOpen}
         onClose={() => setAjustesOpen(false)}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
         notifEnabled={notifEnabled}
         notifLoading={notifLoading}
         onToggleNotif={handleToggleNotif}

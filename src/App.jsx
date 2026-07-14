@@ -86,7 +86,12 @@ function App() {
 
       <main className="app-main">
         {currentView === 'home' && (
-          <CompromissosTab userId={userId} user={session.user} newItemTrigger={newItemTrigger} />
+          <CompromissosTab
+            userId={userId}
+            user={session.user}
+            newItemTrigger={newItemTrigger}
+            onOpenTelegram={() => setShowTelegram(true)}
+          />
         )}
         {currentView === 'history' && (
           <HistoricoTab userId={userId} />

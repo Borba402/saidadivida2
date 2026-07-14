@@ -1,11 +1,10 @@
 import React from 'react';
-import { X, Sun, Moon, Bell, BellOff, Send } from 'lucide-react';
+import { X, Bell, BellOff, Send } from 'lucide-react';
 import Button from './ui/Button';
 import { isPushSupported } from '../services/notificationService';
 
 export default function AjustesModal({
   open, onClose,
-  theme, onToggleTheme,
   notifEnabled, notifLoading, onToggleNotif,
   onTelegram,
 }) {
@@ -29,25 +28,6 @@ export default function AjustesModal({
 
         <div className="item-modal__body" style={{ gap: '1.25rem' }}>
 
-          {/* Aparência */}
-          <div className="ajustes-section">
-            <p className="ajustes-section__title">Aparência</p>
-            <div className="ajustes-row">
-              <div className="ajustes-row__info">
-                {theme === 'dark' ? <Moon size={15} /> : <Sun size={15} />}
-                <span>{theme === 'dark' ? 'Modo escuro' : 'Modo claro'}</span>
-              </div>
-              <label className="recurring-toggle" aria-label="Alternar tema">
-                <input
-                  type="checkbox"
-                  checked={theme === 'light'}
-                  onChange={onToggleTheme}
-                />
-                <span className="recurring-toggle__slider" />
-              </label>
-            </div>
-          </div>
-
           {/* Notificações */}
           {isPushSupported() && (
             <div className="ajustes-section">
@@ -55,7 +35,7 @@ export default function AjustesModal({
               <div className="ajustes-row">
                 <div className="ajustes-row__info">
                   {notifEnabled
-                    ? <Bell size={15} style={{ color: 'var(--sdd-accent)' }} />
+                    ? <Bell size={15} style={{ color: 'var(--sdd-accent-strong)' }} />
                     : <BellOff size={15} />}
                   <span>{notifEnabled ? 'Push ativado' : 'Push desativado'}</span>
                 </div>

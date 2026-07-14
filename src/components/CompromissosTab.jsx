@@ -6,7 +6,7 @@ import {
   Plus, Trash2, Calendar,
   Edit3, Check, X,
   ChevronDown, PlusCircle, AlertTriangle, Repeat2, Save, Lightbulb, Loader2,
-  Eye, EyeOff, CheckCircle2,
+  Eye, EyeOff, CheckCircle2, Send,
 } from 'lucide-react';
 import MonthNavigator from './MonthNavigator';
 import {
@@ -20,6 +20,9 @@ import {
   stopRecurring,
   listRecurringBills,
 } from '../services/recurring';
+import { getTelegramLink } from '../services/telegramService';
+
+const TELEGRAM_BANNER_KEY = 'sdd-telegram-banner-dismissed';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const compact = (v) => Math.round(v).toLocaleString('pt-BR');
@@ -46,7 +49,7 @@ function SkeletonHome() {
 
 const SWIPE_THRESHOLD = 80;
 
-export default function CompromissosTab({ userId, user, newItemTrigger }) {
+export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTelegram }) {
   const meses = getMesesDisponiveis();
   const [mesSelecionado, setMesSelecionado] = useState(getMesAtual());
   const [compromisso, setCompromisso]   = useState(null);
@@ -72,7 +75,7 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
 
   // Phase 9
   const [valoresOcultos, setValoresOcultos]         = useState(() => localStorage.getItem('sdd-valores-ocultos') === '1');
-  const [rendaMetricExpanded, setRendaMetricExpanded] = useState(false);
+  const [rendaSheetOpen, setRendaSheetOpen]           = useState(false);
   const [situacaoExpanded, setSituacaoExpanded]       = useState(false);
   const [toast, setToast]                             = useState(null);
   const [pctAnimado, setPctAnimado]                   = useState(0);
@@ -80,6 +83,21 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
   // Fase 13 — bottom-sheet de detalhe do item (mobile)
   const [sheetItemId, setSheetItemId]                 = useState(null);
   const [horaAtual, setHoraAtual]                     = useState(() => new Date().getHours());
+
+  // Fase 15 — banner de descoberta do Telegram
+  const [telegramLinked, setTelegramLinked]           = useState(null); // null = carregando
+  const [telegramBannerDismissed, setTelegramBannerDismissed] = useState(
+    () => localStorage.getItem(TELEGRAM_BANNER_KEY) === '1'
+  );
+
+  useEffect(() => {
+    getTelegramLink(userId).then(link => setTelegramLinked(!!link));
+  }, [userId]);
+
+  const dismissTelegramBanner = () => {
+    localStorage.setItem(TELEGRAM_BANNER_KEY, '1');
+    setTelegramBannerDismissed(true);
+  };
 
   const nomeUsuario = user?.user_metadata?.full_name?.split(' ')[0]
     || user?.email?.split('@')[0]
@@ -318,8 +336,8 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
                 {itens.length === 0
                   ? `Nenhum item em ${mesSelecionado.split('/')[0]} ainda.`
                   : pct >= 100
-                    ? `${mesSelecionado.split('/')[0]} está 100% quitado. Mês fechado!`
-                    : `${mesSelecionado.split('/')[0]} está ${pct}% quitado — faltam R$ ${compact(faltaPagar)} para fechar o mês`}
+                    ? `${mesSelecionado.split('/')[0]} fechado!`
+                    : `Faltam R$ ${compact(faltaPagar)} para fechar ${mesSelecionado.split('/')[0]}`}
               </p>
               <MonthNavigator
                 compact
@@ -353,6 +371,16 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
                   <span>{valoresOcultos ? '••••' : `R$ ${compact(totalPago)} pagos`}</span>
                   <span>{valoresOcultos ? '••••' : `R$ ${compact(totalGastos)} no total`}</span>
                 </div>
+              </div>
+            )}
+
+            {/* Renda do mês — sempre visível, mesmo sem itens ainda (Fase 15) */}
+            <button type="button" className="hero-card hero-renda-trigger"
+              onClick={() => setRendaSheetOpen(true)}
+              aria-label={`Gerenciar renda de ${mesSelecionado}`}>
+              {rendaPrincipal === 0 && rendasExtra.length === 0 ? (
+                <span className="metric-card__value--empty"><PlusCircle size={15} /> Cadastrar renda</span>
+              ) : (
                 <div className="hero-card__footer">
                   <div className="hero-card__footer-item">
                     <span className="hero-card__footer-label">RENDA</span>
@@ -364,8 +392,8 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
                     <span className="hero-card__footer-value">{dv(faltaPagar)}</span>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </button>
           </div>
 
           {/* ── Home header (desktop) ── */}
@@ -416,102 +444,20 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
           <div className="metric-cards">
 
             {/* Renda do mês */}
-            <div className="metric-card metric-card--expandable"
-              onClick={() => setRendaMetricExpanded(v => !v)}>
+            <button type="button" className="metric-card metric-card--btn"
+              onClick={() => setRendaSheetOpen(true)}
+              aria-label={`Gerenciar renda de ${mesSelecionado}`}>
               <div className="metric-card__header">
                 <span className="metric-card__label">Renda do mês</span>
-                <ChevronDown size={14} className={`metric-card__chevron${rendaMetricExpanded ? ' metric-card__chevron--open' : ''}`} />
               </div>
-              <span className="metric-card__value">{dv(totalRenda)}</span>
-              {rendaMetricExpanded && (
-                <div className="metric-card__detail" onClick={e => e.stopPropagation()}>
-                  <div className="metric-detail-row">
-                    <span className="metric-detail-row__label">Renda principal</span>
-                    <span className="metric-detail-row__val lime-text">{valoresOcultos ? '••••' : fmt(rendaPrincipal)}</span>
-                  </div>
-                  {rendasExtra.length > 0 && (
-                    <>
-                      <div className="metric-detail-divider" />
-                      <p className="metric-detail-section">Rendas extras</p>
-                      {rendasExtra.map(r => (
-                        <div key={r.id} className="metric-detail-row">
-                          <span className="metric-detail-row__label">{r.descricao}</span>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                            <span className="metric-detail-row__val" style={{ color: 'var(--sdd-positive)' }}>
-                              {valoresOcultos ? '••••' : fmt(r.valor)}
-                            </span>
-                            <Button variant="ghost" size="icon" danger onClick={() => handleDeleteRendaExtra(r.id)}>
-                              <Trash2 size={12} />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                      <div className="metric-detail-row metric-detail-row--total">
-                        <span className="metric-detail-row__label">Total extras</span>
-                        <span className="metric-detail-row__val" style={{ color: 'var(--sdd-positive)' }}>
-                          {valoresOcultos ? '••••' : `+${fmt(totalExtras)}`}
-                        </span>
-                      </div>
-                    </>
-                  )}
-                  <div className="metric-detail-divider" />
-
-                  {/* Editar renda principal */}
-                  {editingRenda ? (
-                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.35rem' }}>
-                      <input type="number" className="input-field"
-                        style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem', flex: 1 }}
-                        value={rendaInput} onChange={e => setRendaInput(e.target.value)} autoFocus
-                        onKeyDown={e => { if (e.key === 'Enter') handleSaveRenda(); if (e.key === 'Escape') setEditingRenda(false); }} />
-                      <button className="btn-icon-plain lime-text" onClick={handleSaveRenda}><Check size={15} /></button>
-                      <button className="btn-icon-plain" onClick={() => setEditingRenda(false)}><X size={15} /></button>
-                    </div>
-                  ) : (
-                    <button className="btn-ghost-sm" onClick={() => setEditingRenda(true)} style={{ marginTop: '0.35rem' }}>
-                      <Edit3 size={12} /> Editar renda principal
-                    </button>
-                  )}
-
-                  {/* Toggle recorrente */}
-                  <label className="recurring-toggle-row" style={{ marginTop: '0.5rem' }}>
-                    <div className="recurring-toggle">
-                      <input type="checkbox" checked={compromisso?.renda_recorrente || false}
-                        onChange={handleToggleRendaRecorrente} />
-                      <span className="recurring-toggle__slider" />
-                    </div>
-                    <span className="recurring-toggle-row__label">
-                      <Repeat2 size={13} /> Receber todo mês
-                    </span>
-                  </label>
-
-                  {/* Adicionar renda extra */}
-                  <button className="btn-ghost-sm"
-                    onClick={() => setAddRendaForm(v => !v)}
-                    style={{ marginTop: '0.25rem' }}>
-                    <PlusCircle size={12} /> {addRendaForm ? 'Cancelar' : 'Adicionar renda extra'}
-                  </button>
-                  {addRendaForm && (
-                    <form onSubmit={handleAddRendaExtra}
-                      style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.4rem' }}>
-                      <input type="text" className="input-field" placeholder="Descrição (ex: Freelance)"
-                        value={newRenda.descricao} onChange={e => setNewRenda(v => ({ ...v, descricao: e.target.value }))} />
-                      <input type="number" step="0.01" min="0.01" className="input-field" placeholder="Valor (R$)"
-                        value={newRenda.valor} onChange={e => setNewRenda(v => ({ ...v, valor: e.target.value }))} />
-                      {rendaFormError && <p className="text-danger text-xs">{rendaFormError}</p>}
-                      <div style={{ display: 'flex', gap: '0.4rem' }}>
-                        <Button type="submit" variant="primary" size="sm" disabled={savingRenda}>
-                          <Check size={13} /> Salvar
-                        </Button>
-                        <Button type="button" variant="ghost" size="sm"
-                          onClick={() => { setAddRendaForm(false); setNewRenda(EMPTY_RENDA); }}>
-                          <X size={13} />
-                        </Button>
-                      </div>
-                    </form>
-                  )}
-                </div>
+              {rendaPrincipal === 0 && rendasExtra.length === 0 ? (
+                <span className="metric-card__value metric-card__value--empty">
+                  <PlusCircle size={15} /> Cadastrar renda
+                </span>
+              ) : (
+                <span className="metric-card__value">{dv(totalRenda)}</span>
               )}
-            </div>
+            </button>
 
             {/* Falta pagar */}
             <div className="metric-card">
@@ -557,6 +503,126 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
               )}
             </div>
           </div>
+
+          {/* ── Sheet de gestão de renda (Fase 15) ── */}
+          {rendaSheetOpen && (
+            <div className="dash-overlay" onClick={() => { setRendaSheetOpen(false); setEditingRenda(false); setAddRendaForm(false); }}>
+              <div className="dash-modal" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
+                <div className="dash-modal__header">
+                  <div>
+                    <span className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>Renda</span>
+                    <h2 className="font-bold" style={{ fontSize: '1.1rem', marginTop: 2 }}>Renda de {mesSelecionado}</h2>
+                  </div>
+                  <button className="btn-icon-plain"
+                    onClick={() => { setRendaSheetOpen(false); setEditingRenda(false); setAddRendaForm(false); }}
+                    aria-label="Fechar">
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="dash-section">
+                  <div className="metric-detail-row">
+                    <span className="metric-detail-row__label">Renda principal</span>
+                    {editingRenda ? (
+                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                        <input type="number" className="input-field"
+                          style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem', width: 110 }}
+                          value={rendaInput} onChange={e => setRendaInput(e.target.value)} autoFocus
+                          onKeyDown={e => { if (e.key === 'Enter') handleSaveRenda(); if (e.key === 'Escape') setEditingRenda(false); }} />
+                        <button className="btn-icon-plain lime-text" onClick={handleSaveRenda}><Check size={15} /></button>
+                        <button className="btn-icon-plain" onClick={() => setEditingRenda(false)}><X size={15} /></button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span className="metric-detail-row__val" style={{ color: 'var(--sdd-accent-strong)' }}>
+                          {valoresOcultos ? '••••' : fmt(rendaPrincipal)}
+                        </span>
+                        <button className="btn-icon-plain" onClick={() => setEditingRenda(true)} aria-label="Editar renda principal">
+                          <Edit3 size={13} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <label className="recurring-toggle-row" style={{ marginTop: '0.5rem' }}>
+                    <div className="recurring-toggle">
+                      <input type="checkbox" checked={compromisso?.renda_recorrente || false}
+                        onChange={handleToggleRendaRecorrente} />
+                      <span className="recurring-toggle__slider" />
+                    </div>
+                    <span className="recurring-toggle-row__label">
+                      <Repeat2 size={13} /> Receber todo mês
+                    </span>
+                  </label>
+                </div>
+
+                {rendasExtra.length > 0 && (
+                  <div className="dash-section">
+                    <h3 className="dash-section__title">Rendas extras</h3>
+                    {rendasExtra.map(r => (
+                      <div key={r.id} className="metric-detail-row">
+                        <span className="metric-detail-row__label">{r.descricao}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <span className="metric-detail-row__val" style={{ color: 'var(--sdd-positive)' }}>
+                            {valoresOcultos ? '••••' : fmt(r.valor)}
+                          </span>
+                          <Button variant="ghost" size="icon" danger onClick={() => handleDeleteRendaExtra(r.id)}>
+                            <Trash2 size={12} />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="dash-section">
+                  <button type="button" className="renda-add-btn" onClick={() => setAddRendaForm(v => !v)}>
+                    <PlusCircle size={14} /> {addRendaForm ? 'Cancelar' : 'Adicionar renda extra'}
+                  </button>
+                  {addRendaForm && (
+                    <form onSubmit={handleAddRendaExtra}
+                      style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.5rem' }}>
+                      <input type="text" className="input-field" placeholder="Descrição (ex: Freelance)"
+                        value={newRenda.descricao} onChange={e => setNewRenda(v => ({ ...v, descricao: e.target.value }))} />
+                      <input type="number" step="0.01" min="0.01" className="input-field" placeholder="Valor (R$)"
+                        value={newRenda.valor} onChange={e => setNewRenda(v => ({ ...v, valor: e.target.value }))} />
+                      {rendaFormError && <p className="text-danger text-xs">{rendaFormError}</p>}
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <Button type="submit" variant="primary" size="sm" disabled={savingRenda}>
+                          <Check size={13} /> Salvar
+                        </Button>
+                        <Button type="button" variant="ghost" size="sm"
+                          onClick={() => { setAddRendaForm(false); setNewRenda(EMPTY_RENDA); }}>
+                          <X size={13} />
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+
+                <div className="dash-section">
+                  <div className="metric-detail-row metric-detail-row--total">
+                    <span className="metric-detail-row__label" style={{ fontWeight: 700 }}>Total do mês</span>
+                    <span className="metric-detail-row__val" style={{ fontWeight: 700, fontSize: '1.05rem' }}>
+                      {valoresOcultos ? '••••' : fmt(totalRenda)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Banner de descoberta do Telegram (Fase 15) ── */}
+          {telegramLinked === false && !telegramBannerDismissed && (
+            <div className="telegram-discovery-banner">
+              <Send size={18} style={{ color: '#229ED9', flexShrink: 0 }} />
+              <span className="telegram-discovery-banner__text">Registre gastos direto pelo Telegram</span>
+              <Button variant="secondary" size="sm" onClick={onOpenTelegram}>Conectar</Button>
+              <button className="btn-icon-plain" aria-label="Dispensar" onClick={dismissTelegramBanner}>
+                <X size={16} />
+              </button>
+            </div>
+          )}
 
           {/* ── Items section header ── */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
