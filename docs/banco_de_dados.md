@@ -10,7 +10,7 @@
 
 O banco de dados do SaiDaDívida foi criado diretamente no Supabase, utilizando o PostgreSQL como motor de banco de dados relacional. Toda a segurança de acesso é gerenciada pelo mecanismo de **Row Level Security (RLS)** nativo do Supabase, garantindo que cada usuário acesse apenas os seus próprios dados.
 
-O schema é composto por **7 tabelas**, cada uma com responsabilidade específica dentro da aplicação.
+O schema é composto por **8 tabelas** e **2 funções RPC**, cada uma com responsabilidade específica dentro da aplicação.
 
 ---
 
@@ -23,7 +23,8 @@ auth.users (gerenciado pelo Supabase Auth)
     │       └── rendas_extra (1:N)
     ├── tarefas (1:N)
     ├── push_subscriptions (1:1)
-    └── telegram_links (1:1)
+    ├── telegram_links (1:1)
+    └── telegram_pending_items (1:1, via telegram_links.telegram_chat_id)
 ```
 
 ---
@@ -234,6 +235,58 @@ CREATE TABLE IF NOT EXISTS telegram_links (
 
 ---
 
+### 8. Tabela `telegram_pending_items`
+
+**Descrição:** Guarda o gasto que o bot Telegram acabou de interpretar de uma mensagem, enquanto aguarda o usuário confirmar, trocar a categoria ou cancelar pelos botões inline. Uma linha por chat (`chat_id` é `PRIMARY KEY`); uma nova mensagem sobrescreve a pendência anterior daquele chat.
+
+```sql
+CREATE TABLE IF NOT EXISTS telegram_pending_items (
+  chat_id         TEXT PRIMARY KEY,
+  user_id         UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  mes_referencia  TEXT NOT NULL,
+  nome_item       TEXT NOT NULL,
+  valor           DECIMAL(10,2) NOT NULL,
+  categoria       TEXT NOT NULL DEFAULT 'Outros',
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Explicação coluna a coluna:**
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `chat_id` | TEXT | ID do chat do Telegram. `PRIMARY KEY` garante no máximo uma pendência por chat |
+| `user_id` | UUID | Usuário vinculado a este chat (via `telegram_links`) |
+| `mes_referencia` | TEXT | Mês em que o item será registrado quando confirmado |
+| `nome_item` | TEXT | Descrição interpretada da mensagem, ex: `"mercado"` |
+| `valor` | DECIMAL | Valor interpretado da mensagem |
+| `categoria` | TEXT | Categoria sugerida automaticamente, editável via botão "Trocar categoria" |
+| `created_at` | TIMESTAMPTZ | Data e hora em que a pendência foi criada |
+
+---
+
+## Funções RPC (`SECURITY DEFINER`)
+
+Além das tabelas, o bot do Telegram usa duas funções PL/pgSQL para concentrar a lógica de escrita e leitura em uma única chamada de rede, evitando condições de corrida entre "buscar/criar compromisso" e "inserir item".
+
+### `registrar_item(p_user_id, p_mes_referencia, p_nome_item, p_valor, p_categoria, p_data_vencimento)`
+
+Busca o `compromissos` do usuário para o mês informado (criando um novo com `renda_mensal = 0` se ainda não existir) e insere o item em `itens_compromisso`, retornando a linha criada.
+
+### `resumo_mes(p_user_id, p_mes_referencia)`
+
+Retorna o resumo financeiro do mês, somando `rendas_extra` via `compromisso_id` (mesmo JOIN usado no `CompromissosTab`). Fórmula do saldo:
+
+```
+saldo = (renda_mensal + total_extras) - total_gastos
+```
+
+Também retorna `falta_pagar`, `pct` (percentual pago) e os 3 próximos vencimentos não pagos (`proximos_vencimentos`, como JSONB), usados pelo comando `/saldo` do bot.
+
+Ambas as funções são `SECURITY DEFINER` com `search_path` fixado em `public` (evita sequestro de schema) e o `GRANT EXECUTE` é restrito a `authenticated` e `service_role`.
+
+---
+
 ## Segurança — Row Level Security (RLS)
 
 O Supabase utiliza o mecanismo de **Row Level Security (RLS)** do PostgreSQL para isolar os dados de cada usuário. Toda tabela tem o RLS ativado, e as políticas definem quais linhas cada usuário pode ler, criar, atualizar ou deletar.
@@ -248,6 +301,7 @@ ALTER TABLE tarefas           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE avaliacoes        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE telegram_links    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE telegram_pending_items ENABLE ROW LEVEL SECURITY;
 ```
 
 **O comando `ENABLE ROW LEVEL SECURITY` torna a tabela completamente bloqueada por padrão.** Sem uma policy definida, nenhum usuário consegue acessar nada — nem leitura, nem escrita.
@@ -339,6 +393,17 @@ CREATE POLICY "telegram_links_service" ON telegram_links
 ```
 
 A segunda policy é necessária porque o webhook do Telegram roda no servidor (Vercel), utilizando a chave `service_role` do Supabase. Essa chave bypassa o RLS por padrão, mas a policy garante o acesso explícito para operações do servidor.
+
+---
+
+#### `telegram_pending_items` — apenas service role
+
+```sql
+CREATE POLICY "telegram_pending_service" ON telegram_pending_items
+  FOR ALL USING (true) WITH CHECK (true);
+```
+
+Mesmo padrão de `telegram_links`: só o webhook (service role) lê e escreve nesta tabela, pois o fluxo de confirmação inline não passa pela sessão autenticada do usuário no app.
 
 ---
 
