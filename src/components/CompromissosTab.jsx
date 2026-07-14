@@ -4,10 +4,11 @@ import CategoryBadge from './ui/CategoryBadge';
 import { getCategory } from '../lib/categories';
 import {
   Plus, Trash2, Calendar,
-  Edit3, Check, X, ChevronLeft, ChevronRight,
+  Edit3, Check, X,
   ChevronDown, PlusCircle, AlertTriangle, Repeat2, Save, Lightbulb, Loader2,
   Eye, EyeOff, CheckCircle2,
 } from 'lucide-react';
+import MonthNavigator from './MonthNavigator';
 import {
   getMesAtual, getMesesDisponiveis, getOrCreateCompromisso,
   updateCompromisso, listItens, createItem, updateItem, deleteItem, togglePago, CATEGORIAS,
@@ -286,30 +287,12 @@ export default function CompromissosTab({ userId, user }) {
     });
   };
 
-  const mesIdx  = meses.indexOf(mesSelecionado);
-  const prevMes = mesIdx > 0 ? meses[mesIdx - 1] : null;
-  const nextMes = mesIdx < meses.length - 1 ? meses[mesIdx + 1] : null;
+  const mesFechado = itens.length > 0 && itensPagos === itens.length;
 
   // ── JSX ───────────────────────────────────────
 
   return (
     <div className="compromissos-page">
-      {/* Month navigator */}
-      <div className="month-nav" data-tour="month-nav">
-        <button className="month-nav-arrow" onClick={() => prevMes && setMesSelecionado(prevMes)} disabled={!prevMes}>
-          <ChevronLeft size={18} />
-        </button>
-        <div className="month-tabs-wrap">
-          {meses.map(m => (
-            <button key={m} className={`month-tab ${mesSelecionado === m ? 'month-tab--active' : ''}`}
-              onClick={() => setMesSelecionado(m)}>{m}</button>
-          ))}
-        </div>
-        <button className="month-nav-arrow" onClick={() => nextMes && setMesSelecionado(nextMes)} disabled={!nextMes}>
-          <ChevronRight size={18} />
-        </button>
-      </div>
-
       {loading ? <SkeletonHome /> : (
         <>
           {/* ── Home header ── */}
@@ -324,10 +307,17 @@ export default function CompromissosTab({ userId, user }) {
                     : `${mesSelecionado.split('/')[0]} está ${pct}% quitado — faltam R$ ${compact(faltaPagar)} para fechar o mês`}
               </p>
             </div>
-            <button className="eye-btn" onClick={toggleOculto}
-              aria-label={valoresOcultos ? 'Mostrar valores' : 'Ocultar valores'}>
-              {valoresOcultos ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
+            <div className="home-header__controls">
+              <MonthNavigator
+                meses={meses}
+                mesSelecionado={mesSelecionado}
+                onChange={setMesSelecionado}
+              />
+              <button className="eye-btn" onClick={toggleOculto}
+                aria-label={valoresOcultos ? 'Mostrar valores' : 'Ocultar valores'}>
+                {valoresOcultos ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           {/* ── Progress card ── */}
@@ -463,11 +453,19 @@ export default function CompromissosTab({ userId, user }) {
                 <span className="metric-card__label">Situação</span>
                 <ChevronDown size={14} className={`metric-card__chevron${situacaoExpanded ? ' metric-card__chevron--open' : ''}`} />
               </div>
-              <div className={`situacao-pill${totalGastos > totalRenda ? ' situacao-pill--danger' : ' situacao-pill--ok'}`}
-                aria-label={totalGastos > totalRenda ? 'Acima da renda' : 'Dentro da renda'}>
-                {totalGastos > totalRenda ? <AlertTriangle size={12} /> : <CheckCircle2 size={12} />}
-                {totalGastos > totalRenda ? 'Acima da renda' : 'Dentro da renda'}
-              </div>
+              {mesFechado ? (
+                <div className="situacao-pill situacao-pill--ok" aria-label="Mês fechado">
+                  <CheckCircle2 size={12} /> Mês fechado
+                </div>
+              ) : totalGastos > totalRenda ? (
+                <div className="situacao-pill situacao-pill--danger" aria-label="Acima da renda">
+                  <AlertTriangle size={12} /> Acima da renda
+                </div>
+              ) : (
+                <div className="situacao-pill situacao-pill--ok" aria-label="Dentro da renda">
+                  <CheckCircle2 size={12} /> Dentro da renda
+                </div>
+              )}
               {situacaoExpanded && (
                 <div className="metric-card__detail" onClick={e => e.stopPropagation()}>
                   <div className="metric-detail-row">
