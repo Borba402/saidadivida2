@@ -1,5 +1,6 @@
 import webpush from 'web-push';
 import { createClient } from '@supabase/supabase-js';
+import { sendTelegramMessage } from './_telegram.js';
 
 webpush.setVapidDetails(
   `mailto:${process.env.VAPID_EMAIL}`,
@@ -11,6 +12,8 @@ const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
+
+const fmt = (v) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
 
 export default async function handler(req, res) {
   // Aceita chamada do cron ou POST manual
@@ -26,7 +29,7 @@ export default async function handler(req, res) {
   // Busca itens não pagos vencendo hoje ou amanhã
   const { data: itens, error } = await supabase
     .from('itens_compromisso')
-    .select('nome_item, data_vencimento, compromisso:compromissos(user_id)')
+    .select('nome_item, valor, data_vencimento, compromisso:compromissos(user_id)')
     .in('data_vencimento', [hoje, amanha])
     .eq('pago', false);
 
@@ -80,5 +83,34 @@ export default async function handler(req, res) {
   });
 
   await Promise.all(promises);
-  return res.json({ sent, total: (subs || []).length });
+
+  // Busca vínculos Telegram desses usuários (só quem já concluiu a vinculação)
+  const { data: links } = await supabase
+    .from('telegram_links')
+    .select('user_id, telegram_chat_id')
+    .in('user_id', userIds)
+    .not('telegram_chat_id', 'is', null)
+    .neq('telegram_chat_id', 'pending');
+
+  let telegramSent = 0;
+  const telegramPromises = (links || []).map(async (link) => {
+    const itensUsuario = porUsuario[link.user_id] || [];
+    const venceHoje   = itensUsuario.filter(i => i.data_vencimento === hoje);
+    const venceAmanha = itensUsuario.filter(i => i.data_vencimento === amanha);
+
+    const linhas = (titulo, lista) => lista.length
+      ? [`<b>${titulo}:</b>`, ...lista.map(i => `• ${i.nome_item} — ${fmt(i.valor)}`)].join('\n')
+      : null;
+
+    const texto = ['⏰ <b>Lembrete SaiDaDívida</b>', '']
+      .concat([linhas('Vence hoje', venceHoje), linhas('Vence amanhã', venceAmanha)].filter(Boolean))
+      .join('\n\n');
+
+    const result = await sendTelegramMessage(link.telegram_chat_id, texto);
+    if (result.ok) telegramSent++;
+  });
+
+  await Promise.all(telegramPromises);
+
+  return res.json({ sent, total: (subs || []).length, telegramSent, telegramTotal: (links || []).length });
 }

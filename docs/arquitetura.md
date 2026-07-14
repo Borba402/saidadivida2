@@ -83,7 +83,8 @@ O SaiDaDívida utiliza uma arquitetura moderna baseada em **BaaS (Backend as a S
 | **SGBD** | PostgreSQL 15 |
 | **Hospedagem** | Supabase Cloud |
 | **Segurança** | Row Level Security (RLS) em todas as tabelas |
-| **Tabelas** | 7 tabelas (compromissos, itens, rendas_extra, tarefas, avaliacoes, push_subscriptions, telegram_links) |
+| **Tabelas** | 8 tabelas (compromissos, itens, rendas_extra, tarefas, avaliacoes, push_subscriptions, telegram_links, telegram_pending_items) |
+| **Funções RPC** | `registrar_item` e `resumo_mes` (`SECURITY DEFINER`) — usadas pelo bot Telegram, detalhadas em `banco_de_dados.md` |
 
 ### 3.4 Web Push API — Notificações Push
 
@@ -101,8 +102,10 @@ O SaiDaDívida utiliza uma arquitetura moderna baseada em **BaaS (Backend as a S
 | Item | Detalhe |
 |---|---|
 | **Tecnologia** | Telegram Bot API |
-| **Webhook** | Função serverless hospedada na Vercel |
+| **Webhook** | Função serverless hospedada na Vercel (`api/telegram-webhook.js`), protegida por `secret_token` do `setWebhook` |
 | **Vinculação** | Token temporário com validade (tabela `telegram_links`) |
+| **Registro de gastos** | Linguagem natural + confirmação inline (Confirmar/Trocar categoria/Cancelar) antes de gravar |
+| **Lembretes** | Cron diário (`api/send-reminders.js`, 8h) envia push web **e** mensagem no Telegram para vencimentos de hoje/amanhã |
 
 ---
 

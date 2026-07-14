@@ -1,12 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
+import { tgApi, sendTelegramMessage } from './_telegram.js';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const BOT_TOKEN        = process.env.TELEGRAM_BOT_TOKEN;
-const WEBHOOK_SECRET   = process.env.TELEGRAM_WEBHOOK_SECRET;
+const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
@@ -24,25 +24,7 @@ function getMesAtual() {
 
 // ── Telegram API ─────────────────────────────────────────────
 
-async function tgApi(method, payload) {
-  const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json();
-  if (!data.ok) console.error(`Telegram API ${method} falhou:`, data.description);
-  return data;
-}
-
-async function send(chatId, text, replyMarkup) {
-  return tgApi('sendMessage', {
-    chat_id: chatId,
-    text,
-    parse_mode: 'HTML',
-    reply_markup: replyMarkup,
-  });
-}
+const send = sendTelegramMessage;
 
 async function editMessage(chatId, messageId, text, replyMarkup) {
   return tgApi('editMessageText', {
