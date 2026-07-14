@@ -22,7 +22,7 @@ import {
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const compact = (v) => Math.round(v).toLocaleString('pt-BR');
-const horaParaSaudacao = (h) => h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+const horaParaSaudacao = (h) => (h >= 5 && h < 12) ? 'Bom dia' : (h >= 12 && h < 18) ? 'Boa tarde' : 'Boa noite';
 const isItemVencido = (item) => !item.pago && !!item.data_vencimento && new Date(item.data_vencimento + 'T00:00:00') < new Date();
 
 const EMPTY_ITEM = { nome_item: '', valor: '', data_vencimento: '', pago: false, categoria: 'Outros', recorrente: false };
