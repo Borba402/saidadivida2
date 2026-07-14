@@ -5,6 +5,7 @@ import {
   Settings, HelpCircle, MoreHorizontal, Download,
 } from 'lucide-react';
 import { isPushSupported, isSubscribed, subscribe, unsubscribe } from '../services/notificationService';
+import { getCurrentTheme, setTheme as persistTheme } from '../lib/theme';
 import AjustesModal from './AjustesModal';
 
 const NAV_ITEMS = [
@@ -21,12 +22,6 @@ const TAB_ITEMS = [
   { id: 'analytics', icon: TrendingUp,  label: 'Analytics' },
   { id: 'tasks',     icon: CheckSquare, label: 'Tarefas' },
 ];
-
-function initTheme() {
-  const saved = localStorage.getItem('theme') || 'dark';
-  document.documentElement.classList.toggle('theme-light', saved === 'light');
-  return saved;
-}
 
 function getInitial(user) {
   const name = user?.user_metadata?.full_name || user?.email || '';
@@ -69,7 +64,7 @@ export default function Sidebar({
   );
   const [notifEnabled, setNotifEnabled]   = useState(false);
   const [notifLoading, setNotifLoading]   = useState(false);
-  const [theme, setTheme]                 = useState(initTheme);
+  const [theme, setTheme]                 = useState(getCurrentTheme);
   const [installPrompt, setInstallPrompt] = useState(null);
   const [isIOS, setIsIOS]                 = useState(false);
   const [showIOSTip, setShowIOSTip]       = useState(false);
@@ -108,8 +103,7 @@ export default function Sidebar({
   const handleToggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
-    localStorage.setItem('theme', next);
-    document.documentElement.classList.toggle('theme-light', next === 'light');
+    persistTheme(next);
   };
 
   const handleInstall = async () => {

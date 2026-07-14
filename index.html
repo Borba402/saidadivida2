@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+    <!-- Tema: aplica antes de qualquer render/paint para não "flashar" dark ao carregar no claro -->
+    <script>
+      (function () {
+        var saved = localStorage.getItem('theme');
+        var isLight = saved
+          ? saved === 'light'
+          : window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+        if (isLight) document.documentElement.classList.add('theme-light');
+      })();
+    </script>
+
     <title>SaiDaDívida — Controle financeiro inteligente</title>
     <meta name="description" content="Gerencie sua renda, controle seus gastos e quite suas dívidas com planejamento inteligente." />
 

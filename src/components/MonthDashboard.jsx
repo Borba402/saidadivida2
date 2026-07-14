@@ -81,7 +81,7 @@ export default function MonthDashboard({ registro, onClose }) {
           </div>
           <div className="dash-ring-text">
             <p style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-              Já pago <span style={{ color: 'var(--sdd-accent)' }}>{fmt(totalPago)}</span> de <span style={{ color: 'var(--sdd-negative)' }}>{fmt(totalGastos)}</span>
+              Já pago <span style={{ color: 'var(--sdd-accent-strong)' }}>{fmt(totalPago)}</span> de <span style={{ color: 'var(--sdd-negative)' }}>{fmt(totalGastos)}</span>
             </p>
             {totalGastos - totalPago > 0 && (
               <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
@@ -123,7 +123,7 @@ export default function MonthDashboard({ registro, onClose }) {
               <BarChart data={catData} layout="vertical" margin={{ left: 0, right: 16, top: 4, bottom: 4 }}>
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--sdd-surface-2)' }} />
                 <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                   {catData.map((entry) => (
                     <Cell key={entry.name} fill={getCategory(entry.name).color} />

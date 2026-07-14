@@ -76,6 +76,9 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
   const [situacaoExpanded, setSituacaoExpanded]       = useState(false);
   const [toast, setToast]                             = useState(null);
   const [pctAnimado, setPctAnimado]                   = useState(0);
+
+  // Fase 13 — bottom-sheet de detalhe do item (mobile)
+  const [sheetItemId, setSheetItemId]                 = useState(null);
   const [horaAtual, setHoraAtual]                     = useState(() => new Date().getHours());
 
   const nomeUsuario = user?.user_metadata?.full_name?.split(' ')[0]
@@ -293,6 +296,7 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
   };
 
   const mesFechado = itens.length > 0 && itensPagos === itens.length;
+  const sheetItem  = itens.find(i => i.id === sheetItemId) || null;
 
   // ── JSX ───────────────────────────────────────
 
@@ -300,7 +304,71 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
     <div className="compromissos-page">
       {loading ? <SkeletonHome /> : (
         <>
-          {/* ── Home header ── */}
+          {/* ── Mobile hero (Fase 13, <768px) ── */}
+          <div className="home-hero-mobile">
+            <div className="hero-mobile__toprow">
+              <h1 className="home-greeting">{horaParaSaudacao(horaAtual)}, {nomeUsuario}</h1>
+              <button className="eye-btn" onClick={toggleOculto}
+                aria-label={valoresOcultos ? 'Mostrar valores' : 'Ocultar valores'}>
+                {valoresOcultos ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            <div className="hero-mobile__subrow">
+              <p className="home-subtitle">
+                {itens.length === 0
+                  ? `Nenhum item em ${mesSelecionado.split('/')[0]} ainda.`
+                  : pct >= 100
+                    ? `${mesSelecionado.split('/')[0]} está 100% quitado. Mês fechado!`
+                    : `${mesSelecionado.split('/')[0]} está ${pct}% quitado — faltam R$ ${compact(faltaPagar)} para fechar o mês`}
+              </p>
+              <MonthNavigator
+                compact
+                meses={meses}
+                mesSelecionado={mesSelecionado}
+                onChange={setMesSelecionado}
+              />
+            </div>
+            {!mesFechado && totalGastos > totalRenda && (
+              <div className="situacao-pill situacao-pill--danger hero-mobile__pill" aria-label="Acima da renda">
+                <AlertTriangle size={12} /> Acima da renda
+              </div>
+            )}
+            {mesFechado && (
+              <div className="situacao-pill situacao-pill--ok hero-mobile__pill" aria-label="Mês fechado">
+                <CheckCircle2 size={12} /> Mês fechado
+              </div>
+            )}
+            {itens.length > 0 && (
+              <div className={`hero-card${pct >= 100 ? ' hero-card--complete' : ''}`}>
+                <div className="hero-card__top">
+                  <span className="hero-card__pct">{pct}%</span>
+                  <span className="hero-card__count">{itensPagos} de {itens.length} pagos</span>
+                </div>
+                <div className="progress-bar-wrap">
+                  <div className="progress-bar__track">
+                    <div className="progress-bar__fill" style={{ width: `${pctAnimado}%` }} />
+                  </div>
+                </div>
+                <div className="progress-card__legend">
+                  <span>{valoresOcultos ? '••••' : `R$ ${compact(totalPago)} pagos`}</span>
+                  <span>{valoresOcultos ? '••••' : `R$ ${compact(totalGastos)} no total`}</span>
+                </div>
+                <div className="hero-card__footer">
+                  <div className="hero-card__footer-item">
+                    <span className="hero-card__footer-label">RENDA</span>
+                    <span className="hero-card__footer-value">{dv(totalRenda)}</span>
+                  </div>
+                  <div className="hero-card__footer-divider" />
+                  <div className="hero-card__footer-item">
+                    <span className="hero-card__footer-label">FALTA PAGAR</span>
+                    <span className="hero-card__footer-value">{dv(faltaPagar)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Home header (desktop) ── */}
           <div className="home-header">
             <div className="home-header__text">
               <h1 className="home-greeting">{horaParaSaudacao(horaAtual)}, {nomeUsuario}</h1>
@@ -496,7 +564,7 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
               <h3 className="section-title">Itens do mês</h3>
               <span className="section-label">{mesSelecionado} · {itens.length} {itens.length === 1 ? 'item' : 'itens'}</span>
             </div>
-            <Button data-tour="new-item" variant={addForm ? 'secondary' : 'primary'} size="sm"
+            <Button data-tour="new-item" className="new-item-btn-desktop" variant={addForm ? 'secondary' : 'primary'} size="sm"
               onClick={() => { setAddForm(v => !v); setNewItem(EMPTY_ITEM); setFormError(''); }}>
               <Plus size={15} /> {addForm ? 'Fechar' : 'Novo Item'}
             </Button>
@@ -666,7 +734,7 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
                             <td>
                               <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
                                 <Button variant="ghost" size="icon" onClick={() => handleSaveEdit(item.id)}
-                                  disabled={savingEdit} style={{ color: 'var(--sdd-accent)' }}>
+                                  disabled={savingEdit} style={{ color: 'var(--sdd-accent-strong)' }}>
                                   <Save size={15} />
                                 </Button>
                                 <Button variant="ghost" size="icon" onClick={handleCancelEdit}>
@@ -703,6 +771,7 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
                         onTouchStart={e => handleSwipeStart(item.id, e)}
                         onTouchMove={e => handleSwipeMove(item.id, e)}
                         onTouchEnd={() => handleSwipeEnd(item)}
+                        onClick={() => { if (window.matchMedia('(max-width: 767px)').matches) setSheetItemId(item.id); }}
                         style={{
                           transform: `translateX(${dx}px)`,
                           transition: dx === 0 ? 'transform 0.25s ease' : 'none',
@@ -717,28 +786,34 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
                             ? new Date(item.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')
                             : <span style={{ color: 'var(--border-hover)' }}>Sem data</span>}
                         </td>
-                        <td style={{
+                        <td className="items-table__value" style={{
                           textAlign: 'right',
                           fontSize: '0.9rem',
                           fontWeight: vencido ? 700 : 400,
-                          color: vencido ? 'var(--sdd-negative)' : item.pago ? 'var(--sdd-text-muted)' : undefined,
                         }}>
-                          {valoresOcultos ? '••••' : fmt(item.valor)}
+                          <span className="item-value-desktop" style={{
+                            color: vencido ? 'var(--sdd-negative)' : item.pago ? 'var(--sdd-text-muted)' : undefined,
+                          }}>
+                            {valoresOcultos ? '••••' : fmt(item.valor)}
+                          </span>
+                          <span className="item-value-mobile">
+                            {valoresOcultos ? '••••' : `R$ ${compact(item.valor)}`}
+                          </span>
                         </td>
-                        <td style={{ textAlign: 'center' }}>
+                        <td className="items-table__toggle-cell" style={{ textAlign: 'center' }}>
                           <button className={`pago-toggle${item.pago ? ' pago-toggle--checked' : ''}`}
-                            onClick={() => handleToggle(item)}
+                            onClick={e => { e.stopPropagation(); handleToggle(item); }}
                             title={item.pago ? 'Marcar como pendente' : 'Marcar como pago'}
                             aria-label={item.pago ? 'Marcar como pendente' : 'Marcar como pago'}>
                             {item.pago && <Check size={13} strokeWidth={3} />}
                           </button>
                         </td>
-                        <td>
+                        <td className="items-table__actions-cell">
                           <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
-                            <Button variant="ghost" size="icon" onClick={() => handleStartEdit(item)}>
+                            <Button variant="ghost" size="icon" onClick={e => { e.stopPropagation(); handleStartEdit(item); }}>
                               <Edit3 size={15} />
                             </Button>
-                            <Button variant="ghost" size="icon" danger onClick={() => handleDelete(item.id)}>
+                            <Button variant="ghost" size="icon" danger onClick={e => { e.stopPropagation(); handleDelete(item.id); }}>
                               <Trash2 size={15} />
                             </Button>
                           </div>
@@ -761,6 +836,45 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
               </table>
             </div>
           ) : null}
+
+          {/* ── Bottom-sheet de detalhe do item (Fase 13, mobile) ── */}
+          {sheetItem && (
+            <div className="item-sheet-overlay" onClick={() => setSheetItemId(null)}>
+              <div className="item-sheet" onClick={e => e.stopPropagation()}>
+                <div className="item-sheet__handle" />
+                <div className="item-sheet__header">
+                  <div>
+                    <p className="item-sheet__name">{sheetItem.nome_item}</p>
+                    <div className="item-sheet__meta">
+                      <CategoryBadge category={sheetItem.categoria} outline />
+                      {sheetItem.data_vencimento && (
+                        <span className="text-muted" style={{ fontSize: '0.78rem' }}>
+                          {new Date(sheetItem.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="item-sheet__valor">{valoresOcultos ? '••••' : fmt(sheetItem.valor)}</span>
+                </div>
+
+                <div className="item-sheet__actions">
+                  <button className="item-sheet__action" onClick={() => { handleToggle(sheetItem); setSheetItemId(null); }}>
+                    <CheckCircle2 size={17} />
+                    {sheetItem.pago ? 'Marcar como pendente' : 'Marcar como pago'}
+                  </button>
+                  <button className="item-sheet__action" onClick={() => { handleStartEdit(sheetItem); setSheetItemId(null); }}>
+                    <Edit3 size={17} />
+                    Editar
+                  </button>
+                  <button className="item-sheet__action item-sheet__action--danger"
+                    onClick={() => { handleDelete(sheetItem.id); setSheetItemId(null); }}>
+                    <Trash2 size={17} />
+                    Excluir
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ── Toast ── */}
           {toast && (

@@ -9,7 +9,7 @@ const FOCUS_KEY = 'saidadivida_kanban_focus_v2';
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const COLUMNS = [
-  { id: 'focus',   label: 'Em Foco',  icon: TrendingUp,   color: 'var(--sdd-accent)',    desc: 'Itens prioritários' },
+  { id: 'focus',   label: 'Em Foco',  icon: TrendingUp,   color: 'var(--sdd-accent-strong)', desc: 'Itens prioritários' },
   { id: 'pending', label: 'A Pagar',  icon: Clock,         color: 'var(--sdd-warning)',   desc: 'Aguardando pagamento' },
   { id: 'overdue', label: 'Vencido',  icon: AlertCircle,   color: 'var(--sdd-negative)',  desc: 'Prazo ultrapassado' },
   { id: 'done',    label: 'Pago',     icon: CheckCircle2,  color: 'var(--sdd-positive)',  desc: 'Pagamentos concluídos' },
@@ -182,8 +182,8 @@ export default function KanbanTab({ userId }) {
                     {!isAutoCol && (
                       <div className="kanban-card__actions">
                         {id !== 'focus' && (
-                          <button className="kanban-move-btn" onClick={() => move(item.id, 'focus')} title="Colocar em foco" style={{ '--col': 'var(--sdd-accent)' }}>
-                            <TrendingUp size={11} style={{ color: 'var(--sdd-accent)' }} /> Foco
+                          <button className="kanban-move-btn" onClick={() => move(item.id, 'focus')} title="Colocar em foco" style={{ '--col': 'var(--sdd-accent-strong)' }}>
+                            <TrendingUp size={11} style={{ color: 'var(--sdd-accent-strong)' }} /> Foco
                           </button>
                         )}
                         {id === 'focus' && (

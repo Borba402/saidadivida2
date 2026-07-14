@@ -11,7 +11,7 @@ function parseRef(mesRef) {
 }
 function toRef(mes, ano) { return `${MESES_FULL[mes]}/${ano}`; }
 
-export default function MonthNavigator({ meses, mesSelecionado, onChange }) {
+export default function MonthNavigator({ meses, mesSelecionado, onChange, compact = false }) {
   const [open, setOpen]         = useState(false);
   const containerRef            = useRef(null);
   const { mes, ano }            = parseRef(mesSelecionado);
@@ -61,7 +61,7 @@ export default function MonthNavigator({ meses, mesSelecionado, onChange }) {
 
   return (
     <div
-      className="month-nav-v2"
+      className={`month-nav-v2${compact ? ' month-nav-v2--compact' : ''}`}
       ref={containerRef}
       tabIndex={0}
       onKeyDown={handleKeyDown}
@@ -88,7 +88,9 @@ export default function MonthNavigator({ meses, mesSelecionado, onChange }) {
           aria-expanded={open}
           aria-haspopup="dialog"
         >
-          <span className="month-pill__label">{MESES_FULL[mes]} {ano}</span>
+          <span className="month-pill__label">
+            {compact ? `${MESES_ABREV[mes].charAt(0).toUpperCase()}${MESES_ABREV[mes].slice(1)}` : MESES_FULL[mes]} {ano}
+          </span>
           <ChevronDown
             size={12}
             className={`month-pill__chevron${open ? ' month-pill__chevron--open' : ''}`}

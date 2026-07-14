@@ -405,6 +405,7 @@ CREATE POLICY "telegram_pending_service" ON telegram_pending_items
 
 Mesmo padrão de `telegram_links`: só o webhook (service role) lê e escreve nesta tabela, pois o fluxo de confirmação inline não passa pela sessão autenticada do usuário no app.
 
+
 ---
 
 ## Convenções Adotadas

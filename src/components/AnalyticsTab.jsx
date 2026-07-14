@@ -100,11 +100,11 @@ export default function AnalyticsTab({ userId }) {
       <div className="analytics-kpis">
         <div className="kpi-card">
           <div className="kpi-card__icon" style={{ background: saldoAtual >= 0 ? 'var(--lime-dim)' : 'var(--danger-light)' }}>
-            <DollarSign size={20} style={{ color: saldoAtual >= 0 ? 'var(--sdd-accent)' : 'var(--sdd-negative)' }} />
+            <DollarSign size={20} style={{ color: saldoAtual >= 0 ? 'var(--sdd-accent-strong)' : 'var(--sdd-negative)' }} />
           </div>
           <div>
             <p className="kpi-card__label">Saldo do Mês</p>
-            <p className="kpi-card__value" style={{ color: saldoAtual >= 0 ? 'var(--sdd-accent)' : 'var(--sdd-negative)' }}>{fmt(saldoAtual)}</p>
+            <p className="kpi-card__value" style={{ color: saldoAtual >= 0 ? 'var(--sdd-accent-strong)' : 'var(--sdd-negative)' }}>{fmt(saldoAtual)}</p>
           </div>
         </div>
         <div className="kpi-card">
