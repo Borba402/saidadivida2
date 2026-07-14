@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, DollarSign, Trash2, Plus, Filter } from 'lucide-react';
+import Button from './ui/Button';
 
 export default function GastosForm({ gastos, onAdd, onDelete }) {
   const [isOpen, setIsOpen] = useState(true);
@@ -98,9 +99,9 @@ export default function GastosForm({ gastos, onAdd, onDelete }) {
                 </select>
               </div>
 
-              <button type="submit" className="btn btn-primary" style={{ height: '42px', padding: '0 1rem' }}>
+              <Button type="submit" variant="primary">
                 <Plus size={18} /> Add
-              </button>
+              </Button>
             </div>
             {error && <span className="text-xs text-danger">{error}</span>}
           </form>
@@ -112,30 +113,18 @@ export default function GastosForm({ gastos, onAdd, onDelete }) {
               
               <div className="flex items-center gap-2">
                 <Filter size={16} className="text-muted" />
-                <button 
-                  type="button" 
-                  className={`btn ${filter === 'todos' ? 'btn-primary' : 'btn-outline'}`}
-                  style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-                  onClick={() => setFilter('todos')}
-                >
+                <Button type="button" variant="secondary" size="sm"
+                  active={filter === 'todos'} onClick={() => setFilter('todos')}>
                   Todos
-                </button>
-                <button 
-                  type="button" 
-                  className={`btn ${filter === 'essencial' ? 'btn-primary' : 'btn-outline'}`}
-                  style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-                  onClick={() => setFilter('essencial')}
-                >
+                </Button>
+                <Button type="button" variant="secondary" size="sm"
+                  active={filter === 'essencial'} onClick={() => setFilter('essencial')}>
                   Essenciais
-                </button>
-                <button 
-                  type="button" 
-                  className={`btn ${filter === 'nao_essencial' ? 'btn-primary' : 'btn-outline'}`}
-                  style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-                  onClick={() => setFilter('nao_essencial')}
-                >
+                </Button>
+                <Button type="button" variant="secondary" size="sm"
+                  active={filter === 'nao_essencial'} onClick={() => setFilter('nao_essencial')}>
                   Não-essenciais
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -158,14 +147,10 @@ export default function GastosForm({ gastos, onAdd, onDelete }) {
                       <span className="list-item-value" style={{ color: gasto.tipo === 'essencial' ? 'var(--text-main)' : 'var(--text-muted)' }}>
                         {formatCurrency(gasto.valor)}
                       </span>
-                      <button 
-                        type="button" 
-                        className="btn-icon" 
-                        onClick={() => onDelete(gasto.id)}
-                        title="Remover Gasto"
-                      >
+                      <Button variant="ghost" size="icon" danger
+                        onClick={() => onDelete(gasto.id)} title="Remover Gasto">
                         <Trash2 size={18} />
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))}

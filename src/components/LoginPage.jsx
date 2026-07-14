@@ -112,7 +112,7 @@ export default function LoginPage() {
           </div>
         )}
         {success && (
-          <div className="error-banner" style={{ background: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.25)', color: '#22c55e' }}>
+          <div className="error-banner" style={{ background: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.25)', color: 'var(--sdd-positive)' }}>
             <span>{success}</span>
           </div>
         )}

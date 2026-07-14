@@ -9,10 +9,10 @@ const FOCUS_KEY = 'saidadivida_kanban_focus_v2';
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const COLUMNS = [
-  { id: 'focus',   label: 'Em Foco',  icon: TrendingUp,   color: '#a3e635', desc: 'Itens prioritários' },
-  { id: 'pending', label: 'A Pagar',  icon: Clock,         color: '#f59e0b', desc: 'Aguardando pagamento' },
-  { id: 'overdue', label: 'Vencido',  icon: AlertCircle,   color: '#ef4444', desc: 'Prazo ultrapassado' },
-  { id: 'done',    label: 'Pago',     icon: CheckCircle2,  color: '#22c55e', desc: 'Pagamentos concluídos' },
+  { id: 'focus',   label: 'Em Foco',  icon: TrendingUp,   color: 'var(--sdd-accent)',    desc: 'Itens prioritários' },
+  { id: 'pending', label: 'A Pagar',  icon: Clock,         color: 'var(--sdd-warning)',   desc: 'Aguardando pagamento' },
+  { id: 'overdue', label: 'Vencido',  icon: AlertCircle,   color: 'var(--sdd-negative)',  desc: 'Prazo ultrapassado' },
+  { id: 'done',    label: 'Pago',     icon: CheckCircle2,  color: 'var(--sdd-positive)',  desc: 'Pagamentos concluídos' },
 ];
 
 function resolveCol(item, focusSet) {
@@ -111,7 +111,7 @@ export default function KanbanTab({ userId }) {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <div className="kanban-balance-chip">
             <span className="text-muted" style={{ fontSize: '0.78rem' }}>Pago:</span>
-            <span className="font-bold" style={{ color: '#22c55e', fontSize: '0.88rem' }}>{fmt(totalPago)}</span>
+            <span className="font-bold" style={{ color: 'var(--sdd-positive)', fontSize: '0.88rem' }}>{fmt(totalPago)}</span>
             <span className="text-muted" style={{ fontSize: '0.78rem' }}>/ {fmt(totalComprometido)}</span>
           </div>
         </div>
@@ -166,12 +166,12 @@ export default function KanbanTab({ userId }) {
 
                     <div className="kanban-card__metrics">
                       <div className="kanban-metric">
-                        <span style={{ fontSize: '0.65rem', color: '#6b7280' }}>Valor</span>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--sdd-text-muted)' }}>Valor</span>
                         <span className="font-bold" style={{ fontSize: '0.88rem' }}>{fmt(item.valor)}</span>
                       </div>
                       {item.data_vencimento && (
                         <div className="kanban-metric">
-                          <span style={{ fontSize: '0.65rem', color: '#6b7280' }}>Vencimento</span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--sdd-text-muted)' }}>Vencimento</span>
                           <span style={{ fontSize: '0.8rem' }}>
                             {new Date(item.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                           </span>
@@ -182,13 +182,13 @@ export default function KanbanTab({ userId }) {
                     {!isAutoCol && (
                       <div className="kanban-card__actions">
                         {id !== 'focus' && (
-                          <button className="kanban-move-btn" onClick={() => move(item.id, 'focus')} title="Colocar em foco" style={{ '--col': '#a3e635' }}>
-                            <TrendingUp size={11} style={{ color: '#a3e635' }} /> Foco
+                          <button className="kanban-move-btn" onClick={() => move(item.id, 'focus')} title="Colocar em foco" style={{ '--col': 'var(--sdd-accent)' }}>
+                            <TrendingUp size={11} style={{ color: 'var(--sdd-accent)' }} /> Foco
                           </button>
                         )}
                         {id === 'focus' && (
-                          <button className="kanban-move-btn" onClick={() => move(item.id, 'pending')} title="Remover do foco" style={{ '--col': '#f59e0b' }}>
-                            <Clock size={11} style={{ color: '#f59e0b' }} /> Pendente
+                          <button className="kanban-move-btn" onClick={() => move(item.id, 'pending')} title="Remover do foco" style={{ '--col': 'var(--sdd-warning)' }}>
+                            <Clock size={11} style={{ color: 'var(--sdd-warning)' }} /> Pendente
                           </button>
                         )}
                       </div>

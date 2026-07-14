@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend
+  Tooltip, ResponsiveContainer, Legend, Cell
 } from 'recharts';
 import { TrendingUp, DollarSign, PieChart } from 'lucide-react';
 import { listCompromissos, listItens, getMesAtual } from '../services/compromissoService';
+import { getCategory } from '../lib/categories';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtK = (v) => v >= 1000 ? `R$${(v / 1000).toFixed(1)}k` : `R$${v}`;
@@ -24,11 +25,6 @@ const Tip = ({ active, payload, label }) => {
   );
 };
 
-const CAT_COLORS = {
-  'Alimentação': '#f59e0b', 'Moradia': '#3b82f6', 'Transporte': '#8b5cf6',
-  'Saúde': '#ef4444', 'Educação': '#06b6d4', 'Lazer': '#ec4899',
-  'Vestuário': '#f97316', 'Serviços': '#6b7280', 'Dívidas': '#dc2626', 'Outros': '#9ca3af'
-};
 
 export default function AnalyticsTab({ userId }) {
   const [compromissos, setCompromissos] = useState([]);
@@ -103,21 +99,30 @@ export default function AnalyticsTab({ userId }) {
       {/* KPI Cards */}
       <div className="analytics-kpis">
         <div className="kpi-card">
-          <div className="kpi-card__icon" style={{ background: saldoAtual >= 0 ? 'rgba(163,230,53,0.1)' : 'rgba(239,68,68,0.1)' }}>
-            <DollarSign size={20} className={saldoAtual >= 0 ? 'lime-text' : 'text-danger'} />
+          <div className="kpi-card__icon" style={{ background: saldoAtual >= 0 ? 'var(--lime-dim)' : 'var(--danger-light)' }}>
+            <DollarSign size={20} style={{ color: saldoAtual >= 0 ? 'var(--sdd-accent)' : 'var(--sdd-negative)' }} />
           </div>
           <div>
             <p className="kpi-card__label">Saldo do Mês</p>
-            <p className={`kpi-card__value ${saldoAtual >= 0 ? 'lime-text' : 'text-danger'}`}>{fmt(saldoAtual)}</p>
+            <p className="kpi-card__value" style={{ color: saldoAtual >= 0 ? 'var(--sdd-accent)' : 'var(--sdd-negative)' }}>{fmt(saldoAtual)}</p>
           </div>
         </div>
         <div className="kpi-card">
           <div className="kpi-card__icon" style={{ background: 'rgba(245,158,11,0.1)' }}>
-            <TrendingUp size={20} style={{ color: '#f59e0b' }} />
+            <TrendingUp size={20} style={{ color: 'var(--sdd-warning)' }} />
           </div>
           <div>
             <p className="kpi-card__label">Comprometido</p>
-            <p className="kpi-card__value" style={{ color: '#f59e0b' }}>{fmt(totalComprometidoAtual)}</p>
+            <p className="kpi-card__value" style={{ color: 'var(--sdd-warning)' }}>{fmt(totalComprometidoAtual)}</p>
+          </div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-card__icon" style={{ background: 'rgba(34,197,94,0.1)' }}>
+            <DollarSign size={20} style={{ color: 'var(--sdd-positive)' }} />
+          </div>
+          <div>
+            <p className="kpi-card__label">Pago no Mês</p>
+            <p className="kpi-card__value" style={{ color: 'var(--sdd-positive)' }}>{fmt(totalPagoAtual)}</p>
           </div>
         </div>
       </div>
@@ -136,11 +141,11 @@ export default function AnalyticsTab({ userId }) {
                   <stop offset="95%" stopColor="#a3e635" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e1e1e" vertical={false} />
-              <XAxis dataKey="mes" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={fmtK} width={55} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--sdd-border)" vertical={false} />
+              <XAxis dataKey="mes" tick={{ fill: 'var(--sdd-text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'var(--sdd-text-muted)', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={fmtK} width={55} />
               <Tooltip content={<Tip />} />
-              <Area type="monotone" dataKey="saldo" stroke="#a3e635" strokeWidth={2.5} fill="url(#limeGrad)" dot={false} name="Saldo" />
+              <Area type="monotone" dataKey="saldo" stroke="var(--sdd-accent)" strokeWidth={2.5} fill="url(#limeGrad)" dot={false} name="Saldo" />
             </AreaChart>
           </ResponsiveContainer>
         ) : (
@@ -156,13 +161,13 @@ export default function AnalyticsTab({ userId }) {
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={catData} layout="vertical" margin={{ top: 0, right: 20, left: 60, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e1e1e" horizontal={false} />
-              <XAxis type="number" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={fmtK} />
-              <YAxis dataKey="cat" type="category" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} width={55} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--sdd-border)" horizontal={false} />
+              <XAxis type="number" tick={{ fill: 'var(--sdd-text-muted)', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={fmtK} />
+              <YAxis dataKey="cat" type="category" tick={{ fill: 'var(--sdd-text-dim)', fontSize: 11 }} axisLine={false} tickLine={false} width={55} />
               <Tooltip formatter={(v) => fmt(v)} />
               <Bar dataKey="valor" name="Valor" radius={[0, 4, 4, 0]} maxBarSize={20}>
                 {catData.map((entry, i) => (
-                  <rect key={i} fill={CAT_COLORS[entry.cat] || '#9ca3af'} />
+                  <Cell key={i} fill={getCategory(entry.cat).color} />
                 ))}
               </Bar>
             </BarChart>
@@ -178,13 +183,13 @@ export default function AnalyticsTab({ userId }) {
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={balanceData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }} barGap={4}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e1e1e" vertical={false} />
-              <XAxis dataKey="mes" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={fmtK} width={55} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--sdd-border)" vertical={false} />
+              <XAxis dataKey="mes" tick={{ fill: 'var(--sdd-text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'var(--sdd-text-muted)', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={fmtK} width={55} />
               <Tooltip content={<Tip />} />
-              <Legend wrapperStyle={{ color: '#9ca3af', fontSize: '11px', paddingTop: '8px' }} />
-              <Bar dataKey="renda" name="Renda" fill="#a3e635" radius={[4, 4, 0, 0]} maxBarSize={28} />
-              <Bar dataKey="comprometido" name="Comprometido" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={28} />
+              <Legend wrapperStyle={{ color: 'var(--sdd-text-dim)', fontSize: '11px', paddingTop: '8px' }} />
+              <Bar dataKey="renda" name="Renda" fill="var(--sdd-accent)" radius={[4, 4, 0, 0]} maxBarSize={28} />
+              <Bar dataKey="comprometido" name="Comprometido" fill="var(--sdd-warning)" radius={[4, 4, 0, 0]} maxBarSize={28} />
             </BarChart>
           </ResponsiveContainer>
         </div>

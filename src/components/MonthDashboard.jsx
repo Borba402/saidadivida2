@@ -3,21 +3,16 @@ import { X, TrendingDown, DollarSign, CheckCircle2, Wallet } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
+import { getCategory } from '../lib/categories';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const pct = (v) => `${Math.round(v)}%`;
-
-const CAT_COLORS = {
-  'Alimentação': '#f59e0b', 'Moradia': '#3b82f6', 'Transporte': '#8b5cf6',
-  'Saúde': '#ef4444', 'Educação': '#06b6d4', 'Lazer': '#ec4899',
-  'Vestuário': '#f97316', 'Serviços': '#6b7280', 'Dívidas': '#dc2626', 'Outros': '#9ca3af',
-};
 
 function ProgressRing({ percent, size = 120 }) {
   const r = (size - 16) / 2;
   const circ = 2 * Math.PI * r;
   const offset = circ * (1 - Math.min(percent, 100) / 100);
-  const color = percent >= 100 ? '#a3e635' : percent >= 50 ? '#f97316' : '#ef4444';
+  const color = percent >= 100 ? 'var(--sdd-accent)' : percent >= 50 ? 'var(--sdd-pending)' : 'var(--sdd-negative)';
 
   return (
     <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
@@ -86,11 +81,11 @@ export default function MonthDashboard({ registro, onClose }) {
           </div>
           <div className="dash-ring-text">
             <p style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-              Já pago <span style={{ color: '#a3e635' }}>{fmt(totalPago)}</span> de <span style={{ color: '#ef4444' }}>{fmt(totalGastos)}</span>
+              Já pago <span style={{ color: 'var(--sdd-accent)' }}>{fmt(totalPago)}</span> de <span style={{ color: 'var(--sdd-negative)' }}>{fmt(totalGastos)}</span>
             </p>
             {totalGastos - totalPago > 0 && (
               <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                Restaram <em style={{ fontStyle: 'normal', color: '#f97316', fontWeight: 700 }}>{fmt(totalGastos - totalPago)}</em> sem quitar
+                Restaram <em style={{ fontStyle: 'normal', color: 'var(--sdd-pending)', fontWeight: 700 }}>{fmt(totalGastos - totalPago)}</em> sem quitar
               </p>
             )}
           </div>
@@ -109,9 +104,9 @@ export default function MonthDashboard({ registro, onClose }) {
             <span className="dash-metric__value text-danger">{fmt(totalGastos)}</span>
           </div>
           <div className="dash-metric">
-            <CheckCircle2 size={14} style={{ color: '#22c55e' }} />
+            <CheckCircle2 size={14} style={{ color: 'var(--sdd-positive)' }} />
             <span className="dash-metric__label">Pago</span>
-            <span className="dash-metric__value" style={{ color: '#22c55e' }}>{fmt(totalPago)}</span>
+            <span className="dash-metric__value" style={{ color: 'var(--sdd-positive)' }}>{fmt(totalPago)}</span>
           </div>
           <div className="dash-metric">
             <DollarSign size={14} className={saldo >= 0 ? 'lime-text' : 'text-danger'} />
@@ -131,7 +126,7 @@ export default function MonthDashboard({ registro, onClose }) {
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
                 <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                   {catData.map((entry) => (
-                    <Cell key={entry.name} fill={CAT_COLORS[entry.name] || '#9ca3af'} />
+                    <Cell key={entry.name} fill={getCategory(entry.name).color} />
                   ))}
                 </Bar>
               </BarChart>
@@ -142,8 +137,8 @@ export default function MonthDashboard({ registro, onClose }) {
         {/* Itens pagos / pendentes */}
         <div className="dash-section">
           <h3 className="dash-section__title">
-            Itens pagos <span style={{ color: '#22c55e' }}>({pagas.length})</span>
-            {pendentes.length > 0 && <> · Pendentes <span style={{ color: '#f97316' }}>({pendentes.length})</span></>}
+            Itens pagos <span style={{ color: 'var(--sdd-positive)' }}>({pagas.length})</span>
+            {pendentes.length > 0 && <> · Pendentes <span style={{ color: 'var(--sdd-pending)' }}>({pendentes.length})</span></>}
           </h3>
           <div className="dash-items-list">
             {[...pagas, ...pendentes].map(item => (

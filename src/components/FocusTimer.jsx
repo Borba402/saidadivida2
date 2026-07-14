@@ -67,7 +67,7 @@ export default function FocusTimer({ dividas = [], onXPGained }) {
   };
 
   const { level, percent: lvlPct } = getLevelProgress();
-  const strokeColor = phase === 'focus' ? '#a3e635' : '#22c55e';
+  const strokeColor = phase === 'focus' ? 'var(--sdd-accent)' : 'var(--sdd-positive)';
 
   return (
     <div className="timer-page">
@@ -120,7 +120,7 @@ export default function FocusTimer({ dividas = [], onXPGained }) {
             </div>
           )}
           <svg width="210" height="210" viewBox="0 0 210 210">
-            <circle cx="105" cy="105" r={RADIUS} fill="none" stroke="#1e1e1e" strokeWidth="10" />
+            <circle cx="105" cy="105" r={RADIUS} fill="none" stroke="var(--sdd-border)" strokeWidth="10" />
             <circle
               cx="105" cy="105" r={RADIUS}
               fill="none"
@@ -151,7 +151,7 @@ export default function FocusTimer({ dividas = [], onXPGained }) {
               </filter>
             </defs>
             <text x="105" y="98" textAnchor="middle" dominantBaseline="middle"
-              fill="#f5f5f5" fontSize="36" fontWeight="700" fontFamily="Inter, sans-serif" letterSpacing="-2">
+              fill="var(--sdd-text)" fontSize="36" fontWeight="700" fontFamily="Inter, sans-serif" letterSpacing="-2">
               {mm}:{ss}
             </text>
             <text x="105" y="128" textAnchor="middle" dominantBaseline="middle"

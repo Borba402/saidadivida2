@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import Button from './ui/Button';
+import CategoryBadge from './ui/CategoryBadge';
+import { getCategory } from '../lib/categories';
 import {
-  Plus, Trash2, CheckCircle2, Circle, Calendar,
+  Plus, Trash2, Calendar,
   Edit3, Check, X, ChevronLeft, ChevronRight,
-  ChevronDown, ChevronUp, PlusCircle, AlertTriangle, Repeat2, Save, Lightbulb
+  ChevronDown, ChevronUp, PlusCircle, AlertTriangle, Repeat2, Save, Lightbulb, Loader2
 } from 'lucide-react';
 import {
   getMesAtual, getMesesDisponiveis, getOrCreateCompromisso,
@@ -21,11 +24,6 @@ const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency:
 const EMPTY_ITEM = { nome_item: '', valor: '', data_vencimento: '', pago: false, categoria: 'Outros', recorrente: false };
 const EMPTY_RENDA = { descricao: '', valor: '' };
 
-const CAT_COLORS = {
-  'Alimentação': '#f59e0b', 'Moradia': '#3b82f6', 'Transporte': '#8b5cf6',
-  'Saúde': '#ef4444', 'Educação': '#06b6d4', 'Lazer': '#ec4899',
-  'Vestuário': '#f97316', 'Serviços': '#6b7280', 'Dívidas': '#dc2626', 'Outros': '#9ca3af'
-};
 
 function SkeletonHome() {
   return (
@@ -324,7 +322,7 @@ export default function CompromissosTab({ userId }) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         <span className="balance-panel__value lime-text">{fmt(rendaPrincipal)}</span>
                         <button className="btn-icon-plain" onClick={() => setEditingRenda(true)} title="Editar renda">
-                          <Edit3 size={13} style={{ color: 'var(--text-muted)' }} />
+                          <Edit3 size={13} style={{ color: 'var(--sdd-text-muted)' }} />
                         </button>
                       </div>
                     )}
@@ -348,7 +346,7 @@ export default function CompromissosTab({ userId }) {
                   {rendasExtra.length > 0 && (
                     <div className="renda-panel__extras-summary">
                       <span className="balance-panel__label">+ Rendas extras</span>
-                      <span className="balance-panel__value" style={{ color: '#22c55e' }}>+{fmt(totalExtras)}</span>
+                      <span className="balance-panel__value" style={{ color: 'var(--sdd-positive)' }}>+{fmt(totalExtras)}</span>
                     </div>
                   )}
 
@@ -375,13 +373,13 @@ export default function CompromissosTab({ userId }) {
                   <span className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     Rendas Extras — {mesSelecionado}
                   </span>
-                  <button
-                    className="btn btn-outline"
-                    style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => { setAddRendaForm(v => !v); setRendaFormError(''); }}
                   >
                     <PlusCircle size={13} /> Adicionar
-                  </button>
+                  </Button>
                 </div>
 
                 {addRendaForm && (
@@ -397,13 +395,13 @@ export default function CompromissosTab({ userId }) {
                         onChange={e => setNewRenda(v => ({ ...v, valor: e.target.value }))} />
                     </div>
                     <div style={{ display: 'flex', gap: '0.4rem', paddingBottom: '1px' }}>
-                      <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem 0.875rem' }} disabled={savingRenda}>
+                      <Button type="submit" variant="primary" size="icon" disabled={savingRenda} title="Salvar">
                         <Check size={14} />
-                      </button>
-                      <button type="button" className="btn btn-outline" style={{ padding: '0.5rem 0.875rem' }}
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon" title="Cancelar"
                         onClick={() => { setAddRendaForm(false); setNewRenda(EMPTY_RENDA); setRendaFormError(''); }}>
                         <X size={14} />
-                      </button>
+                      </Button>
                     </div>
                     {rendaFormError && <p className="text-danger text-xs w-full">{rendaFormError}</p>}
                   </form>
@@ -418,15 +416,15 @@ export default function CompromissosTab({ userId }) {
                     {rendasExtra.map(r => (
                       <div key={r.id} className="renda-extra-row">
                         <span className="renda-extra-row__desc">{r.descricao}</span>
-                        <span className="renda-extra-row__valor" style={{ color: '#22c55e' }}>{fmt(r.valor)}</span>
-                        <button className="btn-icon" onClick={() => handleDeleteRendaExtra(r.id)} title="Remover">
+                        <span className="renda-extra-row__valor" style={{ color: 'var(--sdd-positive)' }}>{fmt(r.valor)}</span>
+                        <Button variant="ghost" size="icon" danger onClick={() => handleDeleteRendaExtra(r.id)} title="Remover">
                           <Trash2 size={14} />
-                        </button>
+                        </Button>
                       </div>
                     ))}
                     <div className="renda-extra-row renda-extra-row--total">
                       <span style={{ fontWeight: 700, fontSize: '0.8rem' }}>Total extras</span>
-                      <span style={{ fontWeight: 800, color: '#22c55e' }}>{fmt(totalExtras)}</span>
+                      <span style={{ fontWeight: 800, color: 'var(--sdd-positive)' }}>{fmt(totalExtras)}</span>
                       <span />
                     </div>
                   </div>
@@ -473,7 +471,7 @@ export default function CompromissosTab({ userId }) {
               </div>
               <div className="progress-secondary-strip__item">
                 <span className="progress-secondary-strip__label">Saldo Restante</span>
-                <span className="progress-secondary-strip__value" style={{ color: 'var(--text-muted)' }}>{fmt(saldo)}</span>
+                <span className="progress-secondary-strip__value" style={{ color: saldo >= 0 ? 'var(--sdd-positive)' : 'var(--sdd-negative)' }}>{fmt(saldo)}</span>
               </div>
             </div>
           </div>
@@ -484,79 +482,168 @@ export default function CompromissosTab({ userId }) {
               <h3 className="section-title">Itens do mês</h3>
               <span className="section-label">{mesSelecionado} · {itens.length} {itens.length === 1 ? 'item' : 'itens'}</span>
             </div>
-            <button
+            <Button
               data-tour="new-item"
-              className="btn btn-primary"
-              style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
-              onClick={() => { setAddForm(v => !v); setFormError(''); }}
+              variant={addForm ? 'secondary' : 'primary'}
+              size="sm"
+              onClick={() => { setAddForm(v => !v); setNewItem(EMPTY_ITEM); setFormError(''); }}
             >
-              <Plus size={15} /> Novo Item
-            </button>
+              <Plus size={15} /> {addForm ? 'Fechar' : 'Novo Item'}
+            </Button>
           </div>
 
-          {/* Add item form */}
+          {/* Add item modal — rendered as fixed overlay, position outside normal flow */}
           {addForm && (
-            <form onSubmit={handleAddItem} className="add-item-form slide-down">
-              <div className="add-item-grid">
-                <div className="input-group" style={{ marginBottom: 0 }}>
-                  <label className="input-label">Nome do item *</label>
-                  <input type="text" className="input-field" placeholder="Ex: Aluguel, Supermercado"
-                    value={newItem.nome_item} onChange={e => setNewItem(v => ({ ...v, nome_item: e.target.value }))} />
+            <div
+              className="item-modal-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Novo item"
+              onClick={e => {
+                if (e.target === e.currentTarget) {
+                  setAddForm(false);
+                  setNewItem(EMPTY_ITEM);
+                  setFormError('');
+                }
+              }}
+            >
+              <div className="item-modal">
+                <div className="item-modal__header">
+                  <h2>Novo item</h2>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Fechar"
+                    onClick={() => { setAddForm(false); setNewItem(EMPTY_ITEM); setFormError(''); }}
+                  >
+                    <X size={18} />
+                  </Button>
                 </div>
-                <div className="input-group" style={{ marginBottom: 0 }}>
-                  <label className="input-label">Valor (R$) *</label>
-                  <input type="number" step="0.01" min="0.01" className="input-field" placeholder="0,00"
-                    value={newItem.valor} onChange={e => setNewItem(v => ({ ...v, valor: e.target.value }))} />
-                </div>
-                <div className="input-group" style={{ marginBottom: 0 }}>
-                  <label className="input-label">Categoria</label>
-                  <select className="input-field" value={newItem.categoria}
-                    onChange={e => setNewItem(v => ({ ...v, categoria: e.target.value }))}>
-                    {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div className="input-group" style={{ marginBottom: 0 }}>
-                  <label className="input-label">Vencimento</label>
-                  <input type="date" className="input-field" value={newItem.data_vencimento}
-                    onChange={e => setNewItem(v => ({ ...v, data_vencimento: e.target.value }))} />
-                </div>
-              </div>
 
-              {/* Opções extras do item */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
-                <label className="recurring-toggle-row">
-                  <div className="recurring-toggle">
-                    <input
-                      type="checkbox"
-                      checked={newItem.recorrente || false}
-                      onChange={e => setNewItem(v => ({ ...v, recorrente: e.target.checked }))}
-                    />
-                    <span className="recurring-toggle__slider"></span>
+                <form onSubmit={handleAddItem}>
+                  <div className="item-modal__body">
+
+                    {/* Nome */}
+                    <div>
+                      <label className="item-modal__label">Nome do item *</label>
+                      <input
+                        type="text"
+                        className="input-field item-modal__input"
+                        placeholder="Ex: Aluguel, Supermercado"
+                        value={newItem.nome_item}
+                        onChange={e => setNewItem(v => ({ ...v, nome_item: e.target.value }))}
+                        autoFocus
+                      />
+                    </div>
+
+                    {/* Valor + Vencimento */}
+                    <div className="item-modal__row">
+                      <div>
+                        <label className="item-modal__label">Valor (R$) *</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          className="input-field item-modal__input"
+                          placeholder="0,00"
+                          value={newItem.valor}
+                          onChange={e => setNewItem(v => ({ ...v, valor: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label className="item-modal__label">Vencimento</label>
+                        <input
+                          type="date"
+                          className="input-field item-modal__input"
+                          value={newItem.data_vencimento}
+                          onChange={e => setNewItem(v => ({ ...v, data_vencimento: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Categoria — chip selector */}
+                    <div>
+                      <label className="item-modal__label">Categoria</label>
+                      <div className="cat-chips-row">
+                        {CATEGORIAS.map(c => {
+                          const { icon: CatIcon, color, bg } = getCategory(c);
+                          const isSelected = newItem.categoria === c;
+                          return (
+                            <button
+                              key={c}
+                              type="button"
+                              className="cat-chip"
+                              style={isSelected ? { background: bg, borderColor: color, color, fontWeight: 700 } : {}}
+                              onClick={() => setNewItem(v => ({ ...v, categoria: c }))}
+                            >
+                              <CatIcon size={11} strokeWidth={2} />
+                              {c}
+                              {isSelected && (
+                                <span
+                                  className="cat-chip__x"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setNewItem(v => ({ ...v, categoria: 'Outros' }));
+                                  }}
+                                >
+                                  <X size={10} />
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Opções — círculo 44px "Repetir" */}
+                    <div>
+                      <label className="item-modal__label">Opções</label>
+                      <div className="action-circles-row">
+                        <div className="action-circle">
+                          <button
+                            type="button"
+                            className={`action-circle__btn${newItem.recorrente ? ' action-circle__btn--active' : ''}`}
+                            onClick={() => setNewItem(v => ({ ...v, recorrente: !v.recorrente }))}
+                            aria-label={newItem.recorrente ? 'Desativar repetição mensal' : 'Repetir todo mês'}
+                          >
+                            <Repeat2 size={19} />
+                          </button>
+                          <span className={`action-circle__label${newItem.recorrente ? ' action-circle__label--active' : ''}`}>
+                            Repetir
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Avisos */}
+                    {!newItem.data_vencimento && (
+                      <div className="date-warning">
+                        <AlertTriangle size={13} />
+                        <span>Sem data de vencimento, lembretes não funcionarão.</span>
+                      </div>
+                    )}
+                    {formError && (
+                      <p className="text-danger text-xs">{formError}</p>
+                    )}
                   </div>
-                  <span className="recurring-toggle-row__label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <Repeat2 size={14} /> Repetir todo mês
-                  </span>
-                </label>
 
-                {!newItem.data_vencimento && (
-                  <div className="date-warning">
-                    <AlertTriangle size={13} />
-                    <span>Sem data de vencimento, lembretes não funcionarão.</span>
+                  {/* Footer: botão circular de salvar */}
+                  <div className="item-modal__footer">
+                    <button
+                      type="submit"
+                      className="save-circle-btn"
+                      disabled={saving}
+                      aria-label="Salvar item"
+                    >
+                      {saving
+                        ? <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} />
+                        : <Check size={22} />
+                      }
+                    </button>
                   </div>
-                )}
+                </form>
               </div>
-
-              {formError && <p className="text-danger text-xs" style={{ marginTop: '0.5rem' }}>{formError}</p>}
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.875rem' }}>
-                <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem 1.25rem' }} disabled={saving}>
-                  {saving ? 'Salvando...' : <><Check size={15} /> Salvar</>}
-                </button>
-                <button type="button" className="btn btn-outline" style={{ padding: '0.5rem 1rem' }}
-                  onClick={() => { setAddForm(false); setNewItem(EMPTY_ITEM); setFormError(''); }}>
-                  Cancelar
-                </button>
-              </div>
-            </form>
+            </div>
           )}
 
           {/* Items table */}
@@ -569,9 +656,9 @@ export default function CompromissosTab({ userId }) {
               <p className="empty-state-rich__desc">
                 Adicione suas contas e despesas do mês para acompanhar seu progresso financeiro.
               </p>
-              <button className="btn btn-primary" style={{ padding: '0.65rem 1.5rem', fontSize: '0.9rem' }} onClick={() => setAddForm(true)}>
+              <Button variant="primary" onClick={() => setAddForm(true)}>
                 <Plus size={16} /> Adicionar primeira conta
-              </button>
+              </Button>
               <p className="empty-state-rich__tip">
                 <Lightbulb size={13} /> Ative "Repetir todo mês" em contas fixas como aluguel e luz.
               </p>
@@ -591,7 +678,6 @@ export default function CompromissosTab({ userId }) {
                 </thead>
                 <tbody>
                   {itens.map(item => {
-                    const catColor = CAT_COLORS[item.categoria] || '#9ca3af';
                     const isEditing = editingItemId === item.id;
 
                     if (isEditing) {
@@ -636,26 +722,30 @@ export default function CompromissosTab({ userId }) {
                             />
                           </td>
                           <td style={{ textAlign: 'center' }}>
-                            <button className="toggle-pago-btn" onClick={() => handleToggle(item)}
-                              title={item.pago ? 'Marcar como pendente' : 'Marcar como pago'}>
-                              {item.pago
-                                ? <CheckCircle2 size={20} style={{ color: 'var(--success)' }} />
-                                : <Circle size={20} style={{ color: 'var(--text-muted)' }} />}
+                            <button
+                              className={`pago-toggle${item.pago ? ' pago-toggle--checked' : ''}`}
+                              onClick={() => handleToggle(item)}
+                              title={item.pago ? 'Marcar como pendente' : 'Marcar como pago'}
+                              aria-label={item.pago ? 'Marcar como pendente' : 'Marcar como pago'}
+                            >
+                              {item.pago && <Check size={13} strokeWidth={3} />}
                             </button>
                           </td>
                           <td>
                             <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
-                              <button
-                                className="btn-icon lime-text"
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => handleSaveEdit(item.id)}
                                 disabled={savingEdit}
                                 title="Salvar alterações"
+                                style={{ color: 'var(--sdd-accent)' }}
                               >
                                 <Save size={15} />
-                              </button>
-                              <button className="btn-icon" onClick={handleCancelEdit} title="Cancelar edição">
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={handleCancelEdit} title="Cancelar edição">
                                 <X size={15} />
-                              </button>
+                              </Button>
                             </div>
                           </td>
                         </tr>
@@ -699,9 +789,7 @@ export default function CompromissosTab({ userId }) {
                       >
                         <td className="items-table__name">{item.nome_item}</td>
                         <td>
-                          <span className="cat-badge" style={{ background: `${catColor}18`, color: catColor, border: `1px solid ${catColor}30` }}>
-                            {item.categoria}
-                          </span>
+                          <CategoryBadge category={item.categoria} />
                         </td>
                         <td className="text-muted" style={{ fontSize: '0.8rem' }}>
                           {item.data_vencimento
@@ -710,21 +798,23 @@ export default function CompromissosTab({ userId }) {
                         </td>
                         <td style={{ textAlign: 'right', fontWeight: 700, fontSize: '0.9rem' }}>{fmt(item.valor)}</td>
                         <td style={{ textAlign: 'center' }}>
-                          <button className="toggle-pago-btn" onClick={() => handleToggle(item)}
-                            title={item.pago ? 'Marcar como pendente' : 'Marcar como pago'}>
-                            {item.pago
-                              ? <CheckCircle2 size={20} style={{ color: 'var(--success)' }} />
-                              : <Circle size={20} style={{ color: 'var(--text-muted)' }} />}
+                          <button
+                            className={`pago-toggle${item.pago ? ' pago-toggle--checked' : ''}`}
+                            onClick={() => handleToggle(item)}
+                            title={item.pago ? 'Marcar como pendente' : 'Marcar como pago'}
+                            aria-label={item.pago ? 'Marcar como pendente' : 'Marcar como pago'}
+                          >
+                            {item.pago && <Check size={13} strokeWidth={3} />}
                           </button>
                         </td>
                         <td>
                           <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
-                            <button className="btn-icon" onClick={() => handleStartEdit(item)} title="Editar item">
+                            <Button variant="ghost" size="icon" onClick={() => handleStartEdit(item)} title="Editar item">
                               <Edit3 size={15} />
-                            </button>
-                            <button className="btn-icon btn-icon--delete" onClick={() => handleDelete(item.id)} title="Remover item">
+                            </Button>
+                            <Button variant="ghost" size="icon" danger onClick={() => handleDelete(item.id)} title="Remover item">
                               <Trash2 size={15} />
-                            </button>
+                            </Button>
                           </div>
                         </td>
                       </tr>

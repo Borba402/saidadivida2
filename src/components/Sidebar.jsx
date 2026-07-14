@@ -220,7 +220,7 @@ export default function Sidebar({ currentView, onNavigate, onLogout, userId, onT
             style={{ opacity: notifLoading ? 0.5 : 1, cursor: notifLoading ? 'wait' : 'pointer' }}
           >
             {notifEnabled
-              ? <Bell size={18} style={{ flexShrink: 0, color: '#a3e635' }} />
+              ? <Bell size={18} style={{ flexShrink: 0, color: 'var(--sdd-accent)' }} />
               : <BellOff size={18} style={{ flexShrink: 0 }} />}
           </div>
         )}

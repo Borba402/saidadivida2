@@ -65,14 +65,14 @@ export default function TelegramConnect({ userId, onClose }) {
         {/* Status */}
         {linked ? (
           <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 'var(--radius-lg)', padding: '1rem' }}>
-            <p style={{ color: '#22c55e', fontWeight: 700, marginBottom: '0.25rem' }}>✅ Conectado</p>
+            <p style={{ color: 'var(--sdd-positive)', fontWeight: 700, marginBottom: '0.25rem' }}>✅ Conectado</p>
             <p className="text-muted" style={{ fontSize: '0.85rem' }}>
               @{linked.telegram_username || 'usuário'} · vinculado em {new Date(linked.linked_at).toLocaleDateString('pt-BR')}
             </p>
           </div>
         ) : (
           <div style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)', borderRadius: 'var(--radius-lg)', padding: '1rem' }}>
-            <p style={{ color: '#f97316', fontWeight: 700, marginBottom: '0.25rem' }}>⚠️ Não conectado</p>
+            <p style={{ color: 'var(--sdd-pending)', fontWeight: 700, marginBottom: '0.25rem' }}>⚠️ Não conectado</p>
             <p className="text-muted" style={{ fontSize: '0.85rem' }}>Vincule sua conta para registrar gastos pelo Telegram.</p>
           </div>
         )}
@@ -124,7 +124,7 @@ export default function TelegramConnect({ userId, onClose }) {
                     {token}
                   </div>
                   <button className="btn btn-outline" onClick={handleCopy} title="Copiar código">
-                    {copied ? <Check size={16} style={{ color: '#22c55e' }} /> : <Copy size={16} />}
+                    {copied ? <Check size={16} style={{ color: 'var(--sdd-positive)' }} /> : <Copy size={16} />}
                   </button>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>

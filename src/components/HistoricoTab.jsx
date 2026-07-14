@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { History, TrendingDown, DollarSign, CheckCircle2, Calendar, BarChart2 } from 'lucide-react';
+import { History, TrendingUp, TrendingDown, Calendar, BarChart2 } from 'lucide-react';
+import Button from './ui/Button';
+import CategoryBadge from './ui/CategoryBadge';
 import { listCompromissos, listItens } from '../services/compromissoService';
 import MonthDashboard from './MonthDashboard';
 
@@ -85,15 +87,14 @@ export default function HistoricoTab({ userId }) {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 {r.count > 0 && (
-                  <button
-                    className="btn btn-outline"
-                    style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-                    onClick={() => setDashRegistro(r)}
-                  >
+                  <Button variant="secondary" size="sm" onClick={() => setDashRegistro(r)}>
                     <BarChart2 size={13} /> Dash
-                  </button>
+                  </Button>
                 )}
                 <div className={`historico-saldo-badge ${r.saldo >= 0 ? 'historico-saldo-badge--ok' : 'historico-saldo-badge--neg'}`}>
+                  {r.saldo >= 0
+                    ? <TrendingUp size={11} strokeWidth={2.5} />
+                    : <TrendingDown size={11} strokeWidth={2.5} />}
                   {r.saldo >= 0 ? 'Saldo positivo' : 'Saldo negativo'}
                 </div>
               </div>
@@ -105,37 +106,48 @@ export default function HistoricoTab({ userId }) {
                 <span className="historico-metric__value lime-text">{fmt(r.renda_mensal)}</span>
               </div>
               <div className="historico-metric">
-                <TrendingDown size={11} className="text-danger" />
                 <span className="historico-metric__label">Comprometido</span>
                 <span className="historico-metric__value text-danger">{fmt(r.totalGastos)}</span>
               </div>
               <div className="historico-metric">
-                <CheckCircle2 size={11} style={{ color: '#22c55e' }} />
                 <span className="historico-metric__label">Pago</span>
-                <span className="historico-metric__value" style={{ color: '#22c55e' }}>{fmt(r.totalPago)}</span>
+                <span className="historico-metric__value" style={{ color: 'var(--sdd-positive)' }}>{fmt(r.totalPago)}</span>
               </div>
               <div className="historico-metric">
-                <DollarSign size={11} className={r.saldo >= 0 ? 'lime-text' : 'text-danger'} />
                 <span className="historico-metric__label">Saldo</span>
-                <span className={`historico-metric__value ${r.saldo >= 0 ? 'lime-text' : 'text-danger'}`}>
+                <span className="historico-metric__value" style={{ color: r.saldo >= 0 ? 'var(--sdd-positive)' : 'var(--sdd-negative)' }}>
                   {fmt(r.saldo)}
                 </span>
               </div>
             </div>
 
             {r.count > 0 && (
-              <div className="historico-card__bar-wrap">
-                <div className="historico-bar">
-                  <div
-                    className="historico-bar__fill"
-                    style={{ width: `${Math.min(100, r.totalGastos > 0 ? (r.totalPago / r.totalGastos) * 100 : 0)}%` }}
-                    title={`${Math.round(r.totalPago / (r.totalGastos || 1) * 100)}% pago`}
-                  />
+              <>
+                {/* Categorias do mês */}
+                {(() => {
+                  const cats = [...new Set(r.itens.map(i => i.categoria).filter(Boolean))];
+                  return cats.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.75rem' }}>
+                      {cats.slice(0, 5).map(c => <CategoryBadge key={c} category={c} size="sm" />)}
+                      {cats.length > 5 && (
+                        <span className="text-xs text-muted" style={{ alignSelf: 'center' }}>+{cats.length - 5}</span>
+                      )}
+                    </div>
+                  );
+                })()}
+                <div className="historico-card__bar-wrap">
+                  <div className="historico-bar">
+                    <div
+                      className="historico-bar__fill"
+                      style={{ width: `${Math.min(100, r.totalGastos > 0 ? (r.totalPago / r.totalGastos) * 100 : 0)}%` }}
+                      title={`${Math.round(r.totalPago / (r.totalGastos || 1) * 100)}% pago`}
+                    />
+                  </div>
+                  <span className="text-xs text-muted">
+                    {r.itens.filter(i => i.pago).length}/{r.count} itens pagos
+                  </span>
                 </div>
-                <span className="text-xs text-muted">
-                  {r.itens.filter(i => i.pago).length}/{r.count} itens pagos
-                </span>
-              </div>
+              </>
             )}
           </div>
         ))}

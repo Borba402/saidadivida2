@@ -50,7 +50,7 @@ function StarRating({ value, onChange, readonly = false }) {
           onMouseLeave={() => !readonly && setHover(0)}
           disabled={readonly}
         >
-          <Star size={32} fill={n <= (hover || value) ? '#f59e0b' : 'none'} />
+          <Star size={32} fill={n <= (hover || value) ? 'var(--sdd-warning)' : 'none'} />
         </button>
       ))}
     </div>
@@ -60,24 +60,24 @@ function StarRating({ value, onChange, readonly = false }) {
 /* ── Data ────────────────────────────────── */
 const STATS = [
   { num: 78, suffix: '%', label: 'das pessoas com controle financeiro quitam dívidas em até 2 anos', color: '#3b82f6', border: 'rgba(59,130,246,0.35)', glow: 'rgba(59,130,246,0.2)' },
-  { num: 30, suffix: '%', label: 'mais economizado por quem planeja os gastos mensalmente', color: '#a3e635', border: 'rgba(163,230,53,0.35)', glow: 'rgba(163,230,53,0.15)' },
-  { num: 67, suffix: 'M',  label: 'de brasileiros endividados hoje — SERASA 2024', color: '#f59e0b', border: 'rgba(245,158,11,0.35)', glow: 'rgba(245,158,11,0.15)' },
+  { num: 30, suffix: '%', label: 'mais economizado por quem planeja os gastos mensalmente', color: 'var(--sdd-accent)', border: 'rgba(163,230,53,0.35)', glow: 'rgba(163,230,53,0.15)' },
+  { num: 67, suffix: 'M',  label: 'de brasileiros endividados hoje — SERASA 2024', color: 'var(--sdd-warning)', border: 'rgba(245,158,11,0.35)', glow: 'rgba(245,158,11,0.15)' },
   { num: 3,  suffix: 'x',  label: 'mais chances de aposentadoria confortável com planejamento', color: '#a78bfa', border: 'rgba(167,139,250,0.35)', glow: 'rgba(167,139,250,0.15)' },
 ];
 
 const STEPS = [
   { n: '01', Icon: Wallet,    title: 'Lance renda e gastos',  desc: 'Cadastre sua renda mensal, rendas extras e compromissos financeiros. Veja saldo disponível em tempo real.', color: '#3b82f6', rgb: '59,130,246' },
-  { n: '02', Icon: BarChart2, title: 'Acompanhe e analise',   desc: 'Use o Kanban para visualizar suas contas e o Analytics para entender para onde vai seu dinheiro mês a mês.', color: '#a3e635', rgb: '163,230,53' },
+  { n: '02', Icon: BarChart2, title: 'Acompanhe e analise',   desc: 'Use o Kanban para visualizar suas contas e o Analytics para entender para onde vai seu dinheiro mês a mês.', color: 'var(--sdd-accent)', rgb: '163,230,53' },
   { n: '03', Icon: Target,    title: 'Foco e resultado',      desc: 'Timer de foco integrado, tarefas organizadas e histórico de progresso financeiro mês a mês.', color: '#a78bfa', rgb: '167,139,250' },
 ];
 
 const FEATURES = [
   { Icon: Wallet,          title: 'Compromissos Mensais', desc: 'Lance renda, rendas extras e gastos. Saldo em tempo real, marque contas como pagas.', color: '#3b82f6' },
   { Icon: LayoutDashboard, title: 'Kanban Financeiro',    desc: 'Colunas A Pagar, Em Foco, Vencido e Pago. Arraste e organize visualmente suas contas.', color: '#a78bfa' },
-  { Icon: TrendingUp,      title: 'Analytics',            desc: 'Gráficos de saldo, gastos por categoria e comparativo renda vs comprometido.', color: '#a3e635' },
-  { Icon: CheckSquare,     title: 'Tarefas Diárias',      desc: 'Crie tarefas com vencimento, prioridade alta/normal/baixa e anotações detalhadas.', color: '#f59e0b' },
+  { Icon: TrendingUp,      title: 'Analytics',            desc: 'Gráficos de saldo, gastos por categoria e comparativo renda vs comprometido.', color: 'var(--sdd-accent)' },
+  { Icon: CheckSquare,     title: 'Tarefas Diárias',      desc: 'Crie tarefas com vencimento, prioridade alta/normal/baixa e anotações detalhadas.', color: 'var(--sdd-warning)' },
   { Icon: Timer,           title: 'Timer de Foco',        desc: 'Técnica Pomodoro com XP por sessão. Gamificação que te mantém disciplinado.', color: '#ec4899' },
-  { Icon: Shield,          title: 'Dados 100% Seguros',   desc: 'Login com e-mail ou Google. Autenticação e Row Level Security via Supabase.', color: '#22c55e' },
+  { Icon: Shield,          title: 'Dados 100% Seguros',   desc: 'Login com e-mail ou Google. Autenticação e Row Level Security via Supabase.', color: 'var(--sdd-positive)' },
 ];
 
 /* ── Component ───────────────────────────── */
@@ -290,7 +290,7 @@ export default function LandingPage({ onStart }) {
               <div className="lp-survey-media">
                 <StarRating value={Math.round(media.media)} readonly />
                 <p className="lp-survey-media__text">
-                  <strong style={{ color: '#f59e0b', fontSize: '1.2rem' }}>{media.media.toFixed(1)}</strong>
+                  <strong style={{ color: 'var(--sdd-warning)', fontSize: '1.2rem' }}>{media.media.toFixed(1)}</strong>
                   <span> / 5 &nbsp;·&nbsp; {media.total} avaliação{media.total !== 1 ? 'ões' : ''}</span>
                 </p>
               </div>
@@ -358,7 +358,7 @@ export default function LandingPage({ onStart }) {
         <div className="lp-container lp-footer__inner">
           <div className="lp-logo">
             <div className="lp-logo__icon lp-logo__icon--sm"><Zap size={14} /></div>
-            <span style={{ fontWeight: 700, fontSize: '0.875rem', color: '#f0f0f0' }}>SaiDaDívida</span>
+            <span style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--sdd-text)' }}>SaiDaDívida</span>
           </div>
           <p style={{ fontSize: '0.78rem', color: '#4b5563' }}>
             © 2025 SaiDaDívida — Feito para quem quer mudar de vida.

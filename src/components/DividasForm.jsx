@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, AlertCircle, Trash2, Plus, Filter } from 'lucide-react';
+import Button from './ui/Button';
 
 export default function DividasForm({ dividas, onAdd, onDelete }) {
   const [isOpen, setIsOpen] = useState(true);
@@ -130,9 +131,9 @@ export default function DividasForm({ dividas, onAdd, onDelete }) {
                 />
               </div>
 
-              <button type="submit" className="btn btn-primary" style={{ height: '42px', padding: '0 1rem' }}>
+              <Button type="submit" variant="primary">
                 <Plus size={18} /> Add
-              </button>
+              </Button>
             </div>
             {error && <span className="text-xs text-danger">{error}</span>}
           </form>
@@ -144,30 +145,18 @@ export default function DividasForm({ dividas, onAdd, onDelete }) {
               
               <div className="flex items-center gap-2">
                 <Filter size={16} className="text-muted" />
-                <button 
-                  type="button" 
-                  className={`btn ${filter === 'todas' ? 'btn-primary' : 'btn-outline'}`}
-                  style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-                  onClick={() => setFilter('todas')}
-                >
+                <Button type="button" variant="secondary" size="sm"
+                  active={filter === 'todas'} onClick={() => setFilter('todas')}>
                   Todas
-                </button>
-                <button 
-                  type="button" 
-                  className={`btn ${filter === 'alta' ? 'btn-primary' : 'btn-outline'}`}
-                  style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-                  onClick={() => setFilter('alta')}
-                >
+                </Button>
+                <Button type="button" variant="secondary" size="sm"
+                  active={filter === 'alta'} onClick={() => setFilter('alta')}>
                   Alta Prioridade
-                </button>
-                <button 
-                  type="button" 
-                  className={`btn ${filter === 'baixa' ? 'btn-primary' : 'btn-outline'}`}
-                  style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-                  onClick={() => setFilter('baixa')}
-                >
+                </Button>
+                <Button type="button" variant="secondary" size="sm"
+                  active={filter === 'baixa'} onClick={() => setFilter('baixa')}>
                   Baixa Prioridade
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -197,14 +186,15 @@ export default function DividasForm({ dividas, onAdd, onDelete }) {
                         <span className="list-item-value" style={{ color: divida.juros_mensal >= 8 ? 'var(--danger)' : 'var(--text-main)' }}>
                           {formatCurrency(divida.valor_total)}
                         </span>
-                        <button 
-                          type="button" 
-                          className="btn-icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          danger
                           onClick={() => onDelete(divida.id)}
                           title="Remover Dívida"
                         >
                           <Trash2 size={18} />
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   );

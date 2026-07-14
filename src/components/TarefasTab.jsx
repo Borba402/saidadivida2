@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import Button from './ui/Button';
 import { Plus, Trash2, CheckSquare, Square, ChevronDown, ChevronUp, Calendar, AlertCircle } from 'lucide-react';
 import {
   listTarefas, createTarefa, deleteTarefa, toggleConcluida, updateTarefa, PRIORIDADES
@@ -134,13 +135,13 @@ export default function TarefasTab({ userId }) {
             {counts.pendentes} pendente{counts.pendentes !== 1 ? 's' : ''} · {counts.concluidas} concluída{counts.concluidas !== 1 ? 's' : ''}
           </p>
         </div>
-        <button
-          className="btn btn-primary"
+        <Button
+          variant={showForm ? 'secondary' : 'primary'}
           onClick={() => { setShowForm(v => !v); if (editingId) handleCancel(); }}
         >
           <Plus size={16} />
-          Nova Tarefa
-        </button>
+          {showForm ? 'Fechar' : 'Nova Tarefa'}
+        </Button>
       </div>
 
       {/* Add / Edit form */}
@@ -199,12 +200,12 @@ export default function TarefasTab({ userId }) {
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-outline" onClick={handleCancel}>
+              <Button type="button" variant="secondary" onClick={handleCancel}>
                 Cancelar
-              </button>
-              <button type="submit" className="btn btn-primary" disabled={saving || !form.titulo.trim()}>
+              </Button>
+              <Button type="submit" variant="primary" disabled={saving || !form.titulo.trim()}>
                 {saving ? 'Salvando...' : editingId ? 'Salvar' : 'Criar Tarefa'}
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -284,21 +285,24 @@ export default function TarefasTab({ userId }) {
                   {/* Actions */}
                   <div className="tarefa-card__actions">
                     {tarefa.anotacoes && (
-                      <button
-                        className="btn-icon-plain"
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => toggleExpand(tarefa.id)}
                         title={exp ? 'Ocultar notas' : 'Ver notas'}
                       >
                         {exp ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      </button>
+                      </Button>
                     )}
-                    <button
-                      className="btn-icon-plain btn-icon-danger"
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      danger
                       onClick={() => handleDelete(tarefa.id)}
                       title="Excluir"
                     >
                       <Trash2 size={15} />
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
