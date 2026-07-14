@@ -83,7 +83,7 @@ function App() {
 
       <main className="app-main">
         {currentView === 'home' && (
-          <CompromissosTab userId={userId} />
+          <CompromissosTab userId={userId} user={session.user} />
         )}
         {currentView === 'history' && (
           <HistoricoTab userId={userId} />

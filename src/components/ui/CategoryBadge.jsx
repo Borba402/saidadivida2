@@ -5,7 +5,7 @@ const SIZES = {
   md: { fontSize: '0.78rem', padding: '0.25rem 0.6rem',  iconSize: 13, gap: '0.3rem'  },
 };
 
-export default function CategoryBadge({ category, size = 'sm' }) {
+export default function CategoryBadge({ category, size = 'sm', outline = false }) {
   const { icon: Icon, color, bg } = getCategory(category);
   const s = SIZES[size] ?? SIZES.sm;
 
@@ -19,9 +19,9 @@ export default function CategoryBadge({ category, size = 'sm' }) {
       fontSize: s.fontSize,
       fontWeight: 600,
       whiteSpace: 'nowrap',
-      background: bg,
+      background: outline ? 'transparent' : bg,
       color,
-      border: `1px solid ${color}30`,
+      border: `1px solid ${color}${outline ? '55' : '30'}`,
     }}>
       <Icon size={s.iconSize} strokeWidth={2} />
       {category}
