@@ -1,4 +1,4 @@
-const CACHE = 'saidadivida-v2';
+const CACHE = 'saidadivida-v3';
 const PRECACHE = ['/'];
 
 self.addEventListener('install', e => {
