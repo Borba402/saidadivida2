@@ -22,7 +22,7 @@ import {
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const compact = (v) => Math.round(v).toLocaleString('pt-BR');
-const getSaudacao = () => { const h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; };
+const horaParaSaudacao = (h) => h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
 const isItemVencido = (item) => !item.pago && !!item.data_vencimento && new Date(item.data_vencimento + 'T00:00:00') < new Date();
 
 const EMPTY_ITEM = { nome_item: '', valor: '', data_vencimento: '', pago: false, categoria: 'Outros', recorrente: false };
@@ -75,6 +75,7 @@ export default function CompromissosTab({ userId, user }) {
   const [situacaoExpanded, setSituacaoExpanded]       = useState(false);
   const [toast, setToast]                             = useState(null);
   const [pctAnimado, setPctAnimado]                   = useState(0);
+  const [horaAtual, setHoraAtual]                     = useState(() => new Date().getHours());
 
   const nomeUsuario = user?.user_metadata?.full_name?.split(' ')[0]
     || user?.email?.split('@')[0]
@@ -115,6 +116,12 @@ export default function CompromissosTab({ userId, user }) {
   const pct           = totalGastos > 0 ? Math.round((totalPago / totalGastos) * 100) : 0;
   const itensPagos    = itens.filter(i => i.pago).length;
   const dv = (v) => valoresOcultos ? '••••' : `R$ ${compact(v)}`;
+
+  // Atualiza saudação a cada minuto
+  useEffect(() => {
+    const id = setInterval(() => setHoraAtual(new Date().getHours()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   // Animate progress bar: reset on load, then fill
   useEffect(() => {
@@ -308,7 +315,7 @@ export default function CompromissosTab({ userId, user }) {
           {/* ── Home header ── */}
           <div className="home-header">
             <div className="home-header__text">
-              <h1 className="home-greeting">{getSaudacao()}, {nomeUsuario}</h1>
+              <h1 className="home-greeting">{horaParaSaudacao(horaAtual)}, {nomeUsuario}</h1>
               <p className="home-subtitle">
                 {itens.length === 0
                   ? `Nenhum item em ${mesSelecionado.split('/')[0]} ainda.`
