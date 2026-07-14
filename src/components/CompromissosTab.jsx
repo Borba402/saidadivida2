@@ -453,7 +453,8 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
 
             {/* Situação */}
             <div className="metric-card metric-card--expandable"
-              onClick={() => setSituacaoExpanded(v => !v)}>
+              onClick={() => setSituacaoExpanded(v => !v)}
+              style={{ justifyContent: 'center' }}>
               <div className="metric-card__header">
                 <span className="metric-card__label">Situação</span>
                 <ChevronDown size={14} className={`metric-card__chevron${situacaoExpanded ? ' metric-card__chevron--open' : ''}`} />
@@ -720,7 +721,7 @@ export default function CompromissosTab({ userId, user, newItemTrigger }) {
                           textAlign: 'right',
                           fontSize: '0.9rem',
                           fontWeight: vencido ? 700 : 400,
-                          color: vencido ? 'var(--sdd-negative)' : undefined,
+                          color: vencido ? 'var(--sdd-negative)' : item.pago ? 'var(--sdd-text-muted)' : undefined,
                         }}>
                           {valoresOcultos ? '••••' : fmt(item.valor)}
                         </td>
