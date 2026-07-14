@@ -19,6 +19,7 @@ function App() {
   const [currentView, setCurrentView] = useState('home');
   const [showTelegram, setShowTelegram] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [newItemTrigger, setNewItemTrigger] = useState(0);
 
   useEffect(() => {
     const unsub = onAuthChange((_event, s) => {
@@ -66,8 +67,10 @@ function App() {
         onNavigate={setCurrentView}
         onLogout={handleLogout}
         userId={userId}
+        user={session.user}
         onTelegram={() => setShowTelegram(true)}
         onShowTour={() => setShowTour(true)}
+        onNewItem={() => { setCurrentView('home'); setNewItemTrigger(v => v + 1); }}
       />
 
       {showTelegram && (
@@ -83,7 +86,7 @@ function App() {
 
       <main className="app-main">
         {currentView === 'home' && (
-          <CompromissosTab userId={userId} user={session.user} />
+          <CompromissosTab userId={userId} user={session.user} newItemTrigger={newItemTrigger} />
         )}
         {currentView === 'history' && (
           <HistoricoTab userId={userId} />

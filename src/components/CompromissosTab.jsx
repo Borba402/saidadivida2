@@ -46,7 +46,7 @@ function SkeletonHome() {
 
 const SWIPE_THRESHOLD = 80;
 
-export default function CompromissosTab({ userId, user }) {
+export default function CompromissosTab({ userId, user, newItemTrigger }) {
   const meses = getMesesDisponiveis();
   const [mesSelecionado, setMesSelecionado] = useState(getMesAtual());
   const [compromisso, setCompromisso]   = useState(null);
@@ -123,6 +123,11 @@ export default function CompromissosTab({ userId, user }) {
     const id = setInterval(() => setHoraAtual(new Date().getHours()), 60_000);
     return () => clearInterval(id);
   }, []);
+
+  // Tab bar "+" abre formulário de novo item
+  useEffect(() => {
+    if (newItemTrigger > 0) setAddForm(true);
+  }, [newItemTrigger]);
 
   // Animate progress bar: reset on load, then fill
   useEffect(() => {

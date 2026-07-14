@@ -1,14 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  Wallet, Home, Clock, TrendingUp,
-  LogOut, ChevronLeft, ChevronRight, Menu, X, CheckSquare,
-  Bell, BellOff, Sun, Moon, Download, Send, BookOpen
+  Wallet, Home, Clock, TrendingUp, CheckSquare,
+  LogOut, ChevronLeft, ChevronRight, Plus,
+  Settings, HelpCircle, MoreHorizontal, Download,
 } from 'lucide-react';
 import { isPushSupported, isSubscribed, subscribe, unsubscribe } from '../services/notificationService';
+import AjustesModal from './AjustesModal';
 
 const NAV_ITEMS = [
   { id: 'home',      icon: Home,        label: 'Início' },
   { id: 'history',   icon: Clock,       label: 'Histórico' },
+  { id: 'analytics', icon: TrendingUp,  label: 'Analytics' },
+  { id: 'tasks',     icon: CheckSquare, label: 'Tarefas' },
+];
+
+const TAB_ITEMS = [
+  { id: 'home',      icon: Home,        label: 'Início' },
+  { id: 'history',   icon: Clock,       label: 'Histórico' },
+  null, // central + button placeholder
   { id: 'analytics', icon: TrendingUp,  label: 'Analytics' },
   { id: 'tasks',     icon: CheckSquare, label: 'Tarefas' },
 ];
@@ -19,32 +28,82 @@ function initTheme() {
   return saved;
 }
 
-export default function Sidebar({ currentView, onNavigate, onLogout, userId, onTelegram, onShowTour }) {
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [notifEnabled, setNotifEnabled] = useState(false);
-  const [notifLoading, setNotifLoading] = useState(false);
-  const [theme, setTheme] = useState(initTheme);
-  const [installPrompt, setInstallPrompt] = useState(null);
-  const [isIOS, setIsIOS] = useState(false);
-  const [showIOSTip, setShowIOSTip] = useState(false);
+function getInitial(user) {
+  const name = user?.user_metadata?.full_name || user?.email || '';
+  return name.charAt(0).toUpperCase() || '?';
+}
 
+function getDisplayName(user) {
+  return (
+    user?.user_metadata?.full_name?.split(' ')[0] ||
+    user?.email?.split('@')[0] ||
+    'Usuário'
+  );
+}
+
+function SidebarNavItem({ id, icon: Icon, label, active, onClick, collapsed }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      data-tour={`nav-${id}`}
+      data-tooltip={collapsed ? label : undefined}
+      className={`sidebar__item ${active ? 'sidebar__item--active' : ''}`}
+      onClick={() => onClick(id)}
+      onKeyDown={e => e.key === 'Enter' && onClick(id)}
+      aria-label={label}
+      aria-current={active ? 'page' : undefined}
+    >
+      <Icon size={18} style={{ flexShrink: 0 }} />
+      {!collapsed && <span className="sidebar__item-label">{label}</span>}
+    </div>
+  );
+}
+
+export default function Sidebar({
+  currentView, onNavigate, onLogout, userId, user,
+  onTelegram, onShowTour, onNewItem,
+}) {
+  const [collapsed, setCollapsed] = useState(
+    () => localStorage.getItem('sdd-sidebar-collapsed') === '1',
+  );
+  const [notifEnabled, setNotifEnabled]   = useState(false);
+  const [notifLoading, setNotifLoading]   = useState(false);
+  const [theme, setTheme]                 = useState(initTheme);
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [isIOS, setIsIOS]                 = useState(false);
+  const [showIOSTip, setShowIOSTip]       = useState(false);
+  const [ajustesOpen, setAjustesOpen]     = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+
+  const profileRef = useRef(null);
+
+  // Notif init
   useEffect(() => {
     if (isPushSupported()) isSubscribed().then(setNotifEnabled);
   }, []);
 
-  // Captura o prompt de instalação PWA (Android/Chrome)
+  // PWA install prompt
   useEffect(() => {
     const handler = (e) => { e.preventDefault(); setInstallPrompt(e); };
     window.addEventListener('beforeinstallprompt', handler);
-
-    // Detecta iOS fora do modo standalone
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const standalone = window.matchMedia('(display-mode: standalone)').matches;
     if (ios && !standalone) setIsIOS(true);
-
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
+
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    const fn = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target))
+        setProfileMenuOpen(false);
+    };
+    document.addEventListener('mousedown', fn);
+    return () => document.removeEventListener('mousedown', fn);
+  }, [profileMenuOpen]);
 
   const handleToggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -79,32 +138,38 @@ export default function Sidebar({ currentView, onNavigate, onLogout, userId, onT
     }
   };
 
-  const handleNav = (id) => { onNavigate(id); setMobileOpen(false); };
+  const handleNav = (id) => { onNavigate(id); setMobileSheetOpen(false); };
+
+  const toggleCollapsed = () => {
+    setCollapsed(v => {
+      const next = !v;
+      localStorage.setItem('sdd-sidebar-collapsed', next ? '1' : '0');
+      return next;
+    });
+  };
 
   const showInstallBtn = installPrompt || isIOS;
+  const initial       = getInitial(user);
+  const nome          = getDisplayName(user);
 
   return (
     <>
-      {/* Mobile top bar */}
+      {/* ── Mobile top bar ── */}
       <header className="mobile-topbar">
         <div className="flex items-center gap-2">
           <Wallet size={20} className="lime-text" />
           <span className="font-bold text-sm">SaiDaDívida</span>
         </div>
-        <div className="flex items-center gap-1">
-          <button className="btn-icon-plain" onClick={handleToggleTheme} title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}>
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-          <button className="btn-icon-plain" onClick={() => setMobileOpen(v => !v)}>
-            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </div>
+        <button
+          className="mobile-topbar__avatar"
+          onClick={() => setMobileSheetOpen(true)}
+          aria-label="Perfil e ajustes"
+        >
+          {initial}
+        </button>
       </header>
 
-      {/* Mobile overlay */}
-      {mobileOpen && <div className="mobile-overlay" onClick={() => setMobileOpen(false)} />}
-
-      {/* iOS install tip */}
+      {/* ── iOS install tip ── */}
       {showIOSTip && (
         <div className="ios-install-tip" onClick={() => setShowIOSTip(false)}>
           <p>Toque em <strong>Compartilhar</strong> <span style={{ fontSize: '1.1em' }}>⎙</span> e depois em <strong>"Adicionar à Tela de Início"</strong></p>
@@ -112,148 +177,218 @@ export default function Sidebar({ currentView, onNavigate, onLogout, userId, onT
         </div>
       )}
 
-      {/* Sidebar */}
-      <aside className={`sidebar ${collapsed ? 'sidebar--collapsed' : ''} ${mobileOpen ? 'sidebar--mobile-open' : ''}`}>
+      {/* ── Desktop Sidebar ── */}
+      <aside className={`sidebar${collapsed ? ' sidebar--collapsed' : ''}`}>
+        {/* Logo */}
         <div className="sidebar__logo">
-          <Wallet size={22} className="lime-text" style={{ flexShrink: 0 }} />
-          {!collapsed && <span className="font-bold" style={{ fontSize: '0.95rem', letterSpacing: '-0.02em' }}>SaiDaDívida</span>}
+          <Wallet size={20} className="lime-text" style={{ flexShrink: 0 }} />
+          {!collapsed && (
+            <span style={{ fontSize: '0.92rem', fontWeight: 700, letterSpacing: '-0.02em' }}>
+              SaiDaDívida
+            </span>
+          )}
+          <button
+            className="sidebar__collapse-btn"
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
+          >
+            {collapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
+          </button>
         </div>
 
-        <button className="sidebar__collapse-btn" onClick={() => setCollapsed(v => !v)}>
-          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </button>
-
+        {/* Nav */}
         <nav className="sidebar__nav">
-          {NAV_ITEMS.map(({ id, icon: Icon, label }) => (
-            <div
-              key={id}
-              role="button"
-              tabIndex={0}
-              data-label={collapsed ? '' : label}
-              data-tour={`nav-${id}`}
-              className={`sidebar__item ${currentView === id ? 'sidebar__item--active' : ''}`}
-              onClick={() => handleNav(id)}
-              onKeyDown={e => e.key === 'Enter' && handleNav(id)}
-              title={label}
-              aria-label={label}
-            >
-              <Icon size={18} style={{ flexShrink: 0 }} />
-            </div>
+          {NAV_ITEMS.map(item => (
+            <SidebarNavItem
+              key={item.id}
+              {...item}
+              active={currentView === item.id}
+              onClick={handleNav}
+              collapsed={collapsed}
+            />
           ))}
         </nav>
 
-        {/* Ver tutorial */}
-        <div
-          role="button"
-          tabIndex={0}
-          data-label={collapsed ? '' : 'Ver Tutorial'}
-          className="sidebar__logout"
-          onClick={onShowTour}
-          onKeyDown={e => e.key === 'Enter' && onShowTour()}
-          title="Ver tutorial"
-          aria-label="Ver tutorial"
-          style={{ color: 'var(--text-muted)' }}
-        >
-          <BookOpen size={18} style={{ flexShrink: 0 }} />
-        </div>
-
-        {/* Telegram */}
-        <div
-          role="button"
-          tabIndex={0}
-          data-tour="nav-telegram"
-          data-label={collapsed ? '' : 'Telegram Bot'}
-          className="sidebar__logout"
-          onClick={onTelegram}
-          onKeyDown={e => e.key === 'Enter' && onTelegram()}
-          title="Conectar Telegram"
-          aria-label="Conectar Telegram"
-          style={{ color: '#229ED9' }}
-        >
-          <Send size={18} style={{ flexShrink: 0 }} />
-        </div>
-
-        {/* Instalar App */}
-        {showInstallBtn && (
+        {/* Footer */}
+        <div className="sidebar__footer">
+          {/* Ajustes */}
           <div
             role="button"
             tabIndex={0}
-            data-label={collapsed ? '' : 'Instalar App'}
-            className="sidebar__logout"
-            onClick={handleInstall}
-            onKeyDown={e => e.key === 'Enter' && handleInstall()}
-            title="Instalar App"
-            aria-label="Instalar App"
-            style={{ color: 'var(--lime)' }}
+            data-tour="nav-ajustes"
+            data-tooltip={collapsed ? 'Ajustes' : undefined}
+            className="sidebar__footer-item"
+            onClick={() => setAjustesOpen(true)}
+            onKeyDown={e => e.key === 'Enter' && setAjustesOpen(true)}
+            aria-label="Ajustes"
           >
-            <Download size={18} style={{ flexShrink: 0 }} />
+            <Settings size={17} style={{ flexShrink: 0 }} />
+            {!collapsed && <span className="sidebar__item-label">Ajustes</span>}
           </div>
-        )}
 
-        {/* Tema claro/escuro */}
-        <div
-          role="button"
-          tabIndex={0}
-          data-label={collapsed ? '' : (theme === 'dark' ? 'Modo Claro' : 'Modo Escuro')}
-          className="sidebar__logout"
-          onClick={handleToggleTheme}
-          onKeyDown={e => e.key === 'Enter' && handleToggleTheme()}
-          title={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
-          aria-label="Alternar tema"
-        >
-          {theme === 'dark'
-            ? <Sun size={18} style={{ flexShrink: 0 }} />
-            : <Moon size={18} style={{ flexShrink: 0 }} />}
-        </div>
-
-        {/* Notificações */}
-        {isPushSupported() && (
+          {/* Ajuda */}
           <div
             role="button"
             tabIndex={0}
-            data-label={collapsed ? '' : (notifEnabled ? 'Notificações On' : 'Notificações Off')}
-            className={`sidebar__logout ${notifEnabled ? 'sidebar__notif--on' : ''}`}
-            onClick={notifLoading ? undefined : handleToggleNotif}
-            onKeyDown={e => e.key === 'Enter' && !notifLoading && handleToggleNotif()}
-            title={notifEnabled ? 'Desativar notificações' : 'Ativar notificações'}
-            aria-label={notifEnabled ? 'Desativar notificações' : 'Ativar notificações'}
-            style={{ opacity: notifLoading ? 0.5 : 1, cursor: notifLoading ? 'wait' : 'pointer' }}
+            data-tooltip={collapsed ? 'Ajuda' : undefined}
+            className="sidebar__footer-item"
+            onClick={onShowTour}
+            onKeyDown={e => e.key === 'Enter' && onShowTour()}
+            aria-label="Ajuda / Tutorial"
           >
-            {notifEnabled
-              ? <Bell size={18} style={{ flexShrink: 0, color: 'var(--sdd-accent)' }} />
-              : <BellOff size={18} style={{ flexShrink: 0 }} />}
+            <HelpCircle size={17} style={{ flexShrink: 0 }} />
+            {!collapsed && <span className="sidebar__item-label">Ajuda</span>}
           </div>
-        )}
 
-        {/* Logout */}
-        <div
-          role="button"
-          tabIndex={0}
-          data-label={collapsed ? '' : 'Sair'}
-          className="sidebar__logout sidebar__logout--danger"
-          onClick={onLogout}
-          onKeyDown={e => e.key === 'Enter' && onLogout()}
-          title="Sair"
-          aria-label="Sair"
-        >
-          <LogOut size={18} style={{ flexShrink: 0 }} />
+          {/* Instalar (optional) */}
+          {showInstallBtn && (
+            <div
+              role="button"
+              tabIndex={0}
+              data-tooltip={collapsed ? 'Instalar App' : undefined}
+              className="sidebar__footer-item"
+              onClick={handleInstall}
+              onKeyDown={e => e.key === 'Enter' && handleInstall()}
+              aria-label="Instalar App"
+              style={{ color: 'var(--lime)' }}
+            >
+              <Download size={17} style={{ flexShrink: 0 }} />
+              {!collapsed && <span className="sidebar__item-label">Instalar App</span>}
+            </div>
+          )}
+
+          <div className="sidebar__divider" />
+
+          {/* Profile card */}
+          <div className="sidebar__profile" ref={profileRef}>
+            <button
+              className="sidebar__avatar"
+              onClick={() => setProfileMenuOpen(v => !v)}
+              aria-label="Opções de perfil"
+              aria-expanded={profileMenuOpen}
+            >
+              {initial}
+            </button>
+
+            {!collapsed && (
+              <>
+                <div className="sidebar__profile-text">
+                  <span className="sidebar__profile-name">{nome}</span>
+                  <span className="sidebar__profile-sub">Ver perfil</span>
+                </div>
+                <button
+                  className="sidebar__profile-more"
+                  onClick={() => setProfileMenuOpen(v => !v)}
+                  aria-label="Mais opções"
+                  aria-expanded={profileMenuOpen}
+                >
+                  <MoreHorizontal size={14} />
+                </button>
+              </>
+            )}
+
+            {profileMenuOpen && (
+              <div className="sidebar__profile-dropdown">
+                <button
+                  className="sidebar__profile-dropdown-item sidebar__profile-dropdown-item--danger"
+                  onClick={() => { setProfileMenuOpen(false); onLogout(); }}
+                >
+                  <LogOut size={14} />
+                  <span>Sair</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </aside>
 
-      {/* Mobile bottom nav */}
-      <nav className="mobile-bottom-nav">
-        {NAV_ITEMS.map(({ id, icon: Icon, label }) => (
-          <button
-            key={id}
-            data-tour={`nav-${id}`}
-            className={`mobile-nav-btn ${currentView === id ? 'mobile-nav-btn--active' : ''}`}
-            onClick={() => handleNav(id)}
-          >
-            <Icon size={20} />
-            <span>{label}</span>
-          </button>
-        ))}
+      {/* ── Mobile tab bar ── */}
+      <nav className="tab-bar" aria-label="Navegação">
+        {TAB_ITEMS.map((item, i) => {
+          if (!item) {
+            return (
+              <button
+                key="plus"
+                className="tab-bar__plus"
+                onClick={onNewItem}
+                aria-label="Novo item"
+              >
+                <Plus size={22} />
+              </button>
+            );
+          }
+          const { id, icon: Icon, label } = item;
+          return (
+            <button
+              key={id}
+              data-tour={`nav-${id}`}
+              className={`tab-bar__item${currentView === id ? ' tab-bar__item--active' : ''}`}
+              onClick={() => handleNav(id)}
+              aria-label={label}
+              aria-current={currentView === id ? 'page' : undefined}
+            >
+              <Icon size={20} />
+              <span className="tab-bar__item-label">{label}</span>
+            </button>
+          );
+        })}
       </nav>
+
+      {/* ── Mobile sheet ── */}
+      {mobileSheetOpen && (
+        <div className="mobile-sheet-overlay" onClick={() => setMobileSheetOpen(false)}>
+          <div className="mobile-sheet" onClick={e => e.stopPropagation()}>
+            <div className="mobile-sheet__header">
+              <div className="sidebar__avatar mobile-sheet__avatar">{initial}</div>
+              <div>
+                <div className="mobile-sheet__name">{nome}</div>
+                <div className="sidebar__profile-sub">{user?.email || ''}</div>
+              </div>
+            </div>
+
+            <div className="mobile-sheet__divider" />
+
+            <button className="mobile-sheet__item" onClick={() => { setMobileSheetOpen(false); setAjustesOpen(true); }}>
+              <Settings size={17} />
+              <span>Ajustes</span>
+            </button>
+
+            <button className="mobile-sheet__item" onClick={() => { setMobileSheetOpen(false); onShowTour(); }}>
+              <HelpCircle size={17} />
+              <span>Ajuda / Tutorial</span>
+            </button>
+
+            {showInstallBtn && (
+              <button className="mobile-sheet__item" onClick={() => { setMobileSheetOpen(false); handleInstall(); }}>
+                <Download size={17} />
+                <span>Instalar App</span>
+              </button>
+            )}
+
+            <div className="mobile-sheet__divider" />
+
+            <button
+              className="mobile-sheet__item mobile-sheet__item--danger"
+              onClick={() => { setMobileSheetOpen(false); onLogout(); }}
+            >
+              <LogOut size={17} />
+              <span>Sair</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Ajustes modal ── */}
+      <AjustesModal
+        open={ajustesOpen}
+        onClose={() => setAjustesOpen(false)}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
+        notifEnabled={notifEnabled}
+        notifLoading={notifLoading}
+        onToggleNotif={handleToggleNotif}
+        onTelegram={onTelegram}
+      />
     </>
   );
 }
