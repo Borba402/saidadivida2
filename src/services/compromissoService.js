@@ -90,7 +90,7 @@ export async function listItens(compromissoId) {
     .from('itens_compromisso')
     .select('*')
     .eq('compromisso_id', compromissoId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: false });
   if (error) throw error;
   return data || [];
 }

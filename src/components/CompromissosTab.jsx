@@ -84,6 +84,9 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
   const [sheetItemId, setSheetItemId]                 = useState(null);
   const [horaAtual, setHoraAtual]                     = useState(() => new Date().getHours());
 
+  // Fase 15.1 — destaque temporário do item recém-criado
+  const [highlightItemId, setHighlightItemId]         = useState(null);
+
   // Fase 15 — banner de descoberta do Telegram
   const [telegramLinked, setTelegramLinked]           = useState(null); // null = carregando
   const [telegramBannerDismissed, setTelegramBannerDismissed] = useState(
@@ -219,7 +222,9 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
       if (newItem.recorrente) {
         try { await setBillRecurring(created, userId); } catch (recErr) { console.error('Erro recorrência:', recErr); }
       }
-      setItens(prev => [...prev, created]);
+      setItens(prev => [created, ...prev]);
+      setHighlightItemId(created.id);
+      setTimeout(() => setHighlightItemId(id => id === created.id ? null : id), 1500);
       setNewItem(EMPTY_ITEM);
       setAddForm(false);
     } finally {
@@ -331,14 +336,7 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
                 {valoresOcultos ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            <div className="hero-mobile__subrow">
-              <p className="home-subtitle">
-                {itens.length === 0
-                  ? `Nenhum item em ${mesSelecionado.split('/')[0]} ainda.`
-                  : pct >= 100
-                    ? `${mesSelecionado.split('/')[0]} fechado!`
-                    : `Faltam R$ ${compact(faltaPagar)} para fechar ${mesSelecionado.split('/')[0]}`}
-              </p>
+            <div className="hero-mobile__monthrow">
               <MonthNavigator
                 compact
                 meses={meses}
@@ -346,6 +344,13 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
                 onChange={setMesSelecionado}
               />
             </div>
+            <p className="home-subtitle hero-mobile__subtitle">
+              {itens.length === 0
+                ? `Nenhum item em ${mesSelecionado.split('/')[0]} ainda.`
+                : pct >= 100
+                  ? `${mesSelecionado.split('/')[0]} fechado!`
+                  : `Faltam R$ ${compact(faltaPagar)} para fechar ${mesSelecionado.split('/')[0]}`}
+            </p>
             {!mesFechado && totalGastos > totalRenda && (
               <div className="situacao-pill situacao-pill--danger hero-mobile__pill" aria-label="Acima da renda">
                 <AlertTriangle size={12} /> Acima da renda
@@ -833,7 +838,7 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
                     const swipeColor = item.pago ? '239,68,68' : '34,197,94';
                     return (
                       <tr key={item.id}
-                        className={`items-table__row ${item.pago ? 'items-table__row--pago' : ''}`}
+                        className={`items-table__row ${item.pago ? 'items-table__row--pago' : ''} ${item.id === highlightItemId ? 'items-table__row--new' : ''}`}
                         onTouchStart={e => handleSwipeStart(item.id, e)}
                         onTouchMove={e => handleSwipeMove(item.id, e)}
                         onTouchEnd={() => handleSwipeEnd(item)}

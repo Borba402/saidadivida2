@@ -3746,21 +3746,13 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
     gap: 0.75rem;
   }
   .hero-mobile__toprow .home-greeting { margin: 0; }
-  .hero-mobile__subrow {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-  }
-  .hero-mobile__subrow .home-subtitle {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .hero-mobile__subrow .month-nav-v2 { flex-shrink: 0; }
+  .hero-mobile__monthrow { display: flex; }
   .month-nav-v2--compact .month-pill__label { font-size: 0.8rem; }
+  .hero-mobile__subtitle {
+    width: 100%;
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
   .hero-mobile__pill { align-self: flex-start; }
 
   .hero-card {
@@ -3933,8 +3925,18 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
 .item-sheet__action--danger { color: var(--sdd-negative); }
 .item-sheet__action--danger:hover { background: var(--danger-light); }
 
+/* ── Destaque temporário do item recém-criado (Fase 15.1) ── */
+@keyframes item-new-highlight {
+  from { background-color: var(--lime-dim); }
+  to   { background-color: transparent; }
+}
+.items-table__row--new {
+  animation: item-new-highlight 1.5s ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .items-table__row { transition: none !important; }
+  .items-table__row--new { animation: none !important; }
   .item-sheet { animation: none !important; }
 }
 
