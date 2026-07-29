@@ -3729,6 +3729,9 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
 /* ── Hero mobile (Início, <768px) ── */
 .home-hero-mobile { display: none; }
 
+/* Valor do item: versão sem centavos só existe no mobile (regra base = escondida) */
+.item-value-mobile { display: none; }
+
 @media (max-width: 767px) {
   .home-header, .progress-card, .metric-cards { display: none; }
   .new-item-btn-desktop { display: none; }
