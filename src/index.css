@@ -1922,7 +1922,9 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  border: 2px solid var(--sdd-border);
+  /* --sdd-border é quase o fundo do card (1.1:1 no dark) — o checkbox vazio
+     precisa de um cinza perceptível sem hover (WCAG 1.4.11: mín. 3:1) */
+  border: 2px solid var(--sdd-text-muted);
   background: transparent;
   cursor: pointer;
   display: inline-flex;
@@ -3841,7 +3843,6 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
     width: 26px;
     height: 26px;
     position: relative;
-    border-color: var(--sdd-border);
   }
   .items-table__toggle-cell .pago-toggle::before {
     content: '';
