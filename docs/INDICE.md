@@ -19,6 +19,7 @@ Conforme os documentos recomendados pelo professor para o Projeto Integrador:
 | 6 | Arquitetura do Sistema | [arquitetura.md](arquitetura.md) | Visão geral da solução técnica e seus componentes |
 | 7 | Segurança | [seguranca.md](seguranca.md) | Perfis de acesso, autenticação e proteção dos dados |
 | 8 | Manual do Usuário | [manual_do_usuario.md](manual_do_usuario.md) | Instruções de uso de todas as funcionalidades |
+| 9 | Apresentação Técnica | [apresentacao-tecnica.md](apresentacao-tecnica.md) | Stack e justificativas, fluxos, desafios reais, FAQ da banca e glossário |
 
 ---
 
