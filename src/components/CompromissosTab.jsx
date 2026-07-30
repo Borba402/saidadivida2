@@ -495,17 +495,18 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
                   <CheckCircle2 size={12} /> Dentro da renda
                 </div>
               )}
-              {/* Contador de atrasadas — só quando "acima da renda" não está ocupando
-                  o card (esse é o alerta mais grave: o mês não fecha de jeito nenhum) */}
-              {!mesFechado && totalGastos <= totalRenda && (
+              {/* Linha secundária: atrasos empilham com "Acima da renda" quando coexistem.
+                  O "Nenhuma conta atrasada" só aparece se também não houver estouro de renda,
+                  para não dar mensagem tranquilizadora ao lado de um alerta vermelho. */}
+              {!mesFechado && (
                 itensVencidos > 0 ? (
                   <span className="situacao-sub situacao-sub--alerta">
                     <AlertTriangle size={11} />
                     {itensVencidos === 1 ? '1 conta atrasada' : `${itensVencidos} contas atrasadas`}
                   </span>
-                ) : (
+                ) : totalGastos <= totalRenda ? (
                   <span className="situacao-sub situacao-sub--ok">Nenhuma conta atrasada</span>
-                )
+                ) : null
               )}
               {situacaoExpanded && (
                 <div className="metric-card__detail" onClick={e => e.stopPropagation()}>
