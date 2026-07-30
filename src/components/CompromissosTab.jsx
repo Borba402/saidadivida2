@@ -19,6 +19,8 @@ import {
   setBillRecurring,
   stopRecurring,
   listRecurringBills,
+  excluirOcorrencia,
+  excluirOcorrenciasFuturas,
 } from '../services/recurring';
 import { getTelegramLink } from '../services/telegramService';
 import { useInstallBanner } from '../lib/pwaInstall';
@@ -133,6 +135,9 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
 
   // Fase 15.1 — destaque temporário do item recém-criado
   const [highlightItemId, setHighlightItemId]         = useState(null);
+
+  // Fase 18 — item recorrente aguardando escolha de como excluir
+  const [excluirAlvo, setExcluirAlvo]                 = useState(null);
 
   // Fase 15 — banner de descoberta do Telegram
   const [telegramLinked, setTelegramLinked]           = useState(null); // null = carregando
@@ -330,9 +335,44 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
 
   const handleCancelEdit = () => { setEditingItemId(null); setEditItemData({}); };
 
-  const handleDelete = async (id) => {
-    await deleteItem(id);
-    setItens(prev => prev.filter(i => i.id !== id));
+  // Item recorrente abre o menu de escolha; avulso continua excluindo direto.
+  const handleDelete = async (item) => {
+    if (item.recurring_bill_id) { setExcluirAlvo(item); return; }
+    try {
+      await deleteItem(item.id);
+      setItens(prev => prev.filter(i => i.id !== item.id));
+    } catch (err) {
+      console.error('Erro ao excluir item:', err);
+      setToast({ msg: 'Não consegui excluir, tente novamente' });
+    }
+  };
+
+  const excluirSoEsteMes = async () => {
+    const item = excluirAlvo;
+    setExcluirAlvo(null);
+    try {
+      await excluirOcorrencia(item, mesSelecionado);
+      setItens(prev => prev.filter(i => i.id !== item.id));
+      setToast({ msg: 'Removido só deste mês' });
+    } catch (err) {
+      console.error('Erro ao excluir ocorrência:', err);
+      setToast({ msg: 'Não consegui excluir, tente novamente' });
+    }
+  };
+
+  const excluirProximas = async () => {
+    const item = excluirAlvo;
+    setExcluirAlvo(null);
+    try {
+      await excluirOcorrenciasFuturas(item, mesSelecionado, userId);
+      // O item deste mês permanece; o que muda é ele não ser mais recorrente.
+      setItens(prev => prev.map(i => i.id === item.id ? { ...i, recurring_bill_id: null } : i));
+      setRecurringBills(prev => prev.filter(r => r.id !== item.recurring_bill_id));
+      setToast({ msg: 'Não vai mais se repetir nos próximos meses' });
+    } catch (err) {
+      console.error('Erro ao parar recorrência:', err);
+      setToast({ msg: 'Não consegui alterar a recorrência, tente novamente' });
+    }
   };
 
   const handleToggle = async (item) => {
@@ -953,7 +993,7 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
                             <Button variant="ghost" size="icon" onClick={e => { e.stopPropagation(); handleStartEdit(item); }}>
                               <Edit3 size={15} />
                             </Button>
-                            <Button variant="ghost" size="icon" danger onClick={e => { e.stopPropagation(); handleDelete(item.id); }}>
+                            <Button variant="ghost" size="icon" danger onClick={e => { e.stopPropagation(); handleDelete(item); }}>
                               <Trash2 size={15} />
                             </Button>
                           </div>
@@ -976,6 +1016,48 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
               </table>
             </div>
           ) : null}
+
+          {/* ── Excluir item recorrente: escolha do alcance (Fase 18) ── */}
+          {excluirAlvo && (
+            <div className="dash-overlay" onClick={() => setExcluirAlvo(null)}>
+              <div className="dash-modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+                <div className="dash-modal__header">
+                  <div>
+                    <span className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      Conta que se repete
+                    </span>
+                    <h2 className="font-bold" style={{ fontSize: '1.1rem', marginTop: 2 }}>
+                      Excluir "{excluirAlvo.nome_item}"
+                    </h2>
+                  </div>
+                  <button className="btn-icon-plain" onClick={() => setExcluirAlvo(null)} aria-label="Fechar">
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="item-sheet__actions">
+                  <button className="item-sheet__action escopo-acao" onClick={excluirSoEsteMes}>
+                    <Trash2 size={17} />
+                    <span>
+                      Excluir só este mês
+                      <small className="escopo-acao__desc">Continua aparecendo nos outros meses</small>
+                    </span>
+                  </button>
+                  <button className="item-sheet__action escopo-acao" onClick={excluirProximas}>
+                    <Repeat2 size={17} />
+                    <span>
+                      Excluir as próximas ocorrências
+                      <small className="escopo-acao__desc">Mantém este mês e o histórico</small>
+                    </span>
+                  </button>
+                  <button className="item-sheet__action" onClick={() => setExcluirAlvo(null)}>
+                    <X size={17} />
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ── Bottom-sheet de detalhe do item (Fase 13, mobile) ── */}
           {sheetItem && (
@@ -1007,7 +1089,7 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
                     Editar
                   </button>
                   <button className="item-sheet__action item-sheet__action--danger"
-                    onClick={() => { handleDelete(sheetItem.id); setSheetItemId(null); }}>
+                    onClick={() => { handleDelete(sheetItem); setSheetItemId(null); }}>
                     <Trash2 size={17} />
                     Excluir
                   </button>
@@ -1020,7 +1102,9 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
           {toast && (
             <div className="sdd-toast" role="status" aria-live="polite">
               <span className="sdd-toast__msg">{toast.msg}</span>
-              <button className="sdd-toast__desfazer" onClick={toast.onDesfazer}>Desfazer</button>
+              {toast.onDesfazer && (
+                <button className="sdd-toast__desfazer" onClick={toast.onDesfazer}>Desfazer</button>
+              )}
             </div>
           )}
         </>
