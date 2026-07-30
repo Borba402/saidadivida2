@@ -27,7 +27,10 @@ const TELEGRAM_BANNER_KEY = 'sdd-telegram-banner-dismissed';
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const compact = (v) => Math.round(v).toLocaleString('pt-BR');
 const horaParaSaudacao = (h) => (h >= 5 && h < 12) ? 'Bom dia' : (h >= 12 && h < 18) ? 'Boa tarde' : 'Boa noite';
-const isItemVencido = (item) => !item.pago && !!item.data_vencimento && new Date(item.data_vencimento + 'T00:00:00') < new Date();
+// Vencido = estritamente ANTES de hoje. Comparar com a meia-noite de hoje (e não com
+// `new Date()`) evita marcar como atrasada uma conta que vence hoje e ainda dá tempo de pagar.
+const inicioDeHoje = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+const isItemVencido = (item) => !item.pago && !!item.data_vencimento && new Date(item.data_vencimento + 'T00:00:00') < inicioDeHoje();
 
 const EMPTY_ITEM = { nome_item: '', valor: '', data_vencimento: '', pago: false, categoria: 'Outros', recorrente: false };
 const EMPTY_RENDA = { descricao: '', valor: '' };
@@ -140,6 +143,7 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
   const faltaPagar    = totalGastos - totalPago;
   const pct           = totalGastos > 0 ? Math.round((totalPago / totalGastos) * 100) : 0;
   const itensPagos    = itens.filter(i => i.pago).length;
+  const itensVencidos = itens.filter(isItemVencido).length;
   const dv = (v) => valoresOcultos ? '••••' : `R$ ${compact(v)}`;
 
   // Atualiza saudação a cada minuto
@@ -491,6 +495,18 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
                   <CheckCircle2 size={12} /> Dentro da renda
                 </div>
               )}
+              {/* Contador de atrasadas — só quando "acima da renda" não está ocupando
+                  o card (esse é o alerta mais grave: o mês não fecha de jeito nenhum) */}
+              {!mesFechado && totalGastos <= totalRenda && (
+                itensVencidos > 0 ? (
+                  <span className="situacao-sub situacao-sub--alerta">
+                    <AlertTriangle size={11} />
+                    {itensVencidos === 1 ? '1 conta atrasada' : `${itensVencidos} contas atrasadas`}
+                  </span>
+                ) : (
+                  <span className="situacao-sub situacao-sub--ok">Nenhuma conta atrasada</span>
+                )
+              )}
               {situacaoExpanded && (
                 <div className="metric-card__detail" onClick={e => e.stopPropagation()}>
                   <div className="metric-detail-row">
@@ -838,7 +854,7 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
                     const swipeColor = item.pago ? '239,68,68' : '34,197,94';
                     return (
                       <tr key={item.id}
-                        className={`items-table__row ${item.pago ? 'items-table__row--pago' : ''} ${item.id === highlightItemId ? 'items-table__row--new' : ''}`}
+                        className={`items-table__row ${item.pago ? 'items-table__row--pago' : ''} ${vencido ? 'items-table__row--vencido' : ''} ${item.id === highlightItemId ? 'items-table__row--new' : ''}`}
                         onTouchStart={e => handleSwipeStart(item.id, e)}
                         onTouchMove={e => handleSwipeMove(item.id, e)}
                         onTouchEnd={() => handleSwipeEnd(item)}
@@ -852,19 +868,27 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
                         }}>
                         <td className="items-table__name">{item.nome_item}</td>
                         <td><CategoryBadge category={item.categoria} outline /></td>
-                        <td className="text-muted" style={{ fontSize: '0.8rem' }}>
+                        <td className="text-muted items-table__date" style={{
+                          fontSize: '0.8rem',
+                          color: vencido ? 'var(--sdd-negative)' : undefined,
+                        }}>
                           {item.data_vencimento
-                            ? new Date(item.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')
+                            ? <span className="items-table__date-inner">
+                                {vencido && <AlertTriangle size={12} aria-label="Vencido" />}
+                                {new Date(item.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}
+                              </span>
                             : <span style={{ color: 'var(--border-hover)' }}>Sem data</span>}
                         </td>
+                        {/* Vermelho só quando realmente vencido; em dia = cor neutra do tema */}
                         <td className="items-table__value" style={{
                           textAlign: 'right',
                           fontSize: '0.9rem',
                           fontWeight: vencido ? 700 : 400,
+                          color: vencido
+                            ? 'var(--sdd-negative)'
+                            : item.pago ? 'var(--sdd-text-muted)' : 'var(--sdd-text)',
                         }}>
-                          <span className="item-value-desktop" style={{
-                            color: vencido ? 'var(--sdd-negative)' : item.pago ? 'var(--sdd-text-muted)' : undefined,
-                          }}>
+                          <span className="item-value-desktop">
                             {valoresOcultos ? '••••' : fmt(item.valor)}
                           </span>
                           <span className="item-value-mobile">

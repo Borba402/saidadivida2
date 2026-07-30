@@ -1871,7 +1871,6 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
   vertical-align: middle;
 }
 .items-table__row:last-child td { border-bottom: none; }
-.items-table__row:hover td { background: var(--bg-elevated); }
 .items-table__row--pago td { opacity: 0.55; }
 .items-table__row--pago .items-table__name { text-decoration: line-through; }
 .items-table__name { font-weight: 500; }
@@ -3822,7 +3821,6 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
     transition: opacity 150ms ease;
   }
   .items-table__row td { padding: 0; border: none; }
-  .items-table__row:hover td { background: transparent; }
 
   .items-table__row--pago { opacity: 0.65; }
   .items-table__row--pago .items-table__name { text-decoration: line-through; }
@@ -3836,7 +3834,9 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
 
   /* Duas versões do valor: com centavos (desktop) e sem centavos (mobile) */
   .item-value-desktop { display: none; }
-  .item-value-mobile  { display: inline; color: var(--sdd-text); }
+  /* sem color aqui: a cor semântica vem do td .items-table__value (em dia /
+     vencido / pago), senão o mobile nunca mostraria o vermelho de vencido */
+  .item-value-mobile  { display: inline; }
 
   /* Checkbox circular — visual 26px, alvo de toque 44px via ::before invisível */
   .items-table__toggle-cell .pago-toggle {
@@ -4039,4 +4039,47 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
   color: var(--sdd-positive);
   border-color: rgba(34, 197, 94, 0.3);
 }
+
+/* ============================================
+   FASE 17 — Cor semântica + destaque de vencido
+   ============================================ */
+
+/* Data de vencimento: ícone de alerta colado no texto quando vencido */
+.items-table__date-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.items-table__row--vencido .items-table__date { font-weight: 600; }
+
+/* Barra fina à esquerda marcando item vencido.
+   box-shadow inset em vez de border-left: não altera a métrica das células
+   (a tabela desktop usa border-collapse padrão) nem o grid do card mobile. */
+.items-table__row--vencido td:first-child {
+  box-shadow: inset 3px 0 0 var(--sdd-negative);
+}
+
+/* Hover de linha — só desktop; no mobile a lista vira cards, sem hover */
+@media (min-width: 768px) {
+  .items-table__row:hover td { background: var(--sdd-surface-2); }
+}
+@media (max-width: 767px) {
+  /* no card mobile a barra acompanha o raio do canto */
+  .items-table__row--vencido {
+    box-shadow: inset 3px 0 0 var(--sdd-negative);
+  }
+  .items-table__row--vencido td:first-child { box-shadow: none; }
+}
+
+/* Card Situação — contador de contas atrasadas */
+.situacao-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.situacao-sub--alerta { color: var(--sdd-negative); }
+.situacao-sub--ok     { color: var(--sdd-text-muted); }
 
