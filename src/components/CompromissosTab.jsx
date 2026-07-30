@@ -52,7 +52,14 @@ function SkeletonHome() {
 
 // Pill de situação + linha de atrasos. Fonte única: usado pelo card Situação
 // (desktop) e pelo hero (mobile), para os dois não divergirem.
-function SituacaoStatus({ mesFechado, totalGastos, totalRenda, itensVencidos, pillClassName = '' }) {
+function SituacaoStatus({
+  mesFechado, totalGastos, totalRenda, itensVencidos,
+  pillClassName = '',
+  // No hero mobile a pill neutra fica de fora (decisão da Fase 13: topo enxuto);
+  // "Acima da renda" e "Mês fechado" continuam aparecendo, e a linha de atrasos
+  // é renderizada mesmo sem pill.
+  ocultarPillNeutra = false,
+}) {
   const acimaDaRenda = !mesFechado && totalGastos > totalRenda;
   return (
     <>
@@ -64,11 +71,11 @@ function SituacaoStatus({ mesFechado, totalGastos, totalRenda, itensVencidos, pi
         <div className={`situacao-pill situacao-pill--danger ${pillClassName}`} aria-label="Acima da renda">
           <AlertTriangle size={12} /> Acima da renda
         </div>
-      ) : (
+      ) : !ocultarPillNeutra ? (
         <div className={`situacao-pill situacao-pill--ok ${pillClassName}`} aria-label="Dentro da renda">
           <CheckCircle2 size={12} /> Dentro da renda
         </div>
-      )}
+      ) : null}
       {/* Atrasos empilham com "Acima da renda". O "Nenhuma conta atrasada" fica de fora
           quando há estouro de renda, para não tranquilizar ao lado de um alerta vermelho. */}
       {!mesFechado && (
@@ -397,6 +404,7 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
                 totalRenda={totalRenda}
                 itensVencidos={itensVencidos}
                 pillClassName="hero-mobile__pill"
+                ocultarPillNeutra
               />
             </div>
             {itens.length > 0 && (
