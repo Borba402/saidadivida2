@@ -3758,6 +3758,14 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
     overflow-wrap: break-word;
   }
   .hero-mobile__pill { align-self: flex-start; }
+  /* pill + linha de atrasos empilhadas, coladas (o gap do hero é maior) */
+  .hero-mobile__situacao {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+  }
+  .hero-mobile__situacao .situacao-sub { margin-top: 0; }
 
   .hero-card {
     background: var(--sdd-surface);

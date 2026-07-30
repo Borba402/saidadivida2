@@ -50,6 +50,41 @@ function SkeletonHome() {
   );
 }
 
+// Pill de situação + linha de atrasos. Fonte única: usado pelo card Situação
+// (desktop) e pelo hero (mobile), para os dois não divergirem.
+function SituacaoStatus({ mesFechado, totalGastos, totalRenda, itensVencidos, pillClassName = '' }) {
+  const acimaDaRenda = !mesFechado && totalGastos > totalRenda;
+  return (
+    <>
+      {mesFechado ? (
+        <div className={`situacao-pill situacao-pill--ok ${pillClassName}`} aria-label="Mês fechado">
+          <CheckCircle2 size={12} /> Mês fechado
+        </div>
+      ) : acimaDaRenda ? (
+        <div className={`situacao-pill situacao-pill--danger ${pillClassName}`} aria-label="Acima da renda">
+          <AlertTriangle size={12} /> Acima da renda
+        </div>
+      ) : (
+        <div className={`situacao-pill situacao-pill--ok ${pillClassName}`} aria-label="Dentro da renda">
+          <CheckCircle2 size={12} /> Dentro da renda
+        </div>
+      )}
+      {/* Atrasos empilham com "Acima da renda". O "Nenhuma conta atrasada" fica de fora
+          quando há estouro de renda, para não tranquilizar ao lado de um alerta vermelho. */}
+      {!mesFechado && (
+        itensVencidos > 0 ? (
+          <span className="situacao-sub situacao-sub--alerta">
+            <AlertTriangle size={11} />
+            {itensVencidos === 1 ? '1 conta atrasada' : `${itensVencidos} contas atrasadas`}
+          </span>
+        ) : !acimaDaRenda ? (
+          <span className="situacao-sub situacao-sub--ok">Nenhuma conta atrasada</span>
+        ) : null
+      )}
+    </>
+  );
+}
+
 const SWIPE_THRESHOLD = 80;
 
 export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTelegram }) {
@@ -355,16 +390,15 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
                   ? `${mesSelecionado.split('/')[0]} fechado!`
                   : `Faltam R$ ${compact(faltaPagar)} para fechar ${mesSelecionado.split('/')[0]}`}
             </p>
-            {!mesFechado && totalGastos > totalRenda && (
-              <div className="situacao-pill situacao-pill--danger hero-mobile__pill" aria-label="Acima da renda">
-                <AlertTriangle size={12} /> Acima da renda
-              </div>
-            )}
-            {mesFechado && (
-              <div className="situacao-pill situacao-pill--ok hero-mobile__pill" aria-label="Mês fechado">
-                <CheckCircle2 size={12} /> Mês fechado
-              </div>
-            )}
+            <div className="hero-mobile__situacao">
+              <SituacaoStatus
+                mesFechado={mesFechado}
+                totalGastos={totalGastos}
+                totalRenda={totalRenda}
+                itensVencidos={itensVencidos}
+                pillClassName="hero-mobile__pill"
+              />
+            </div>
             {itens.length > 0 && (
               <div className={`hero-card${pct >= 100 ? ' hero-card--complete' : ''}`}>
                 <div className="hero-card__top">
@@ -482,32 +516,12 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
                 <span className="metric-card__label">Situação</span>
                 <ChevronDown size={14} className={`metric-card__chevron${situacaoExpanded ? ' metric-card__chevron--open' : ''}`} />
               </div>
-              {mesFechado ? (
-                <div className="situacao-pill situacao-pill--ok" aria-label="Mês fechado">
-                  <CheckCircle2 size={12} /> Mês fechado
-                </div>
-              ) : totalGastos > totalRenda ? (
-                <div className="situacao-pill situacao-pill--danger" aria-label="Acima da renda">
-                  <AlertTriangle size={12} /> Acima da renda
-                </div>
-              ) : (
-                <div className="situacao-pill situacao-pill--ok" aria-label="Dentro da renda">
-                  <CheckCircle2 size={12} /> Dentro da renda
-                </div>
-              )}
-              {/* Linha secundária: atrasos empilham com "Acima da renda" quando coexistem.
-                  O "Nenhuma conta atrasada" só aparece se também não houver estouro de renda,
-                  para não dar mensagem tranquilizadora ao lado de um alerta vermelho. */}
-              {!mesFechado && (
-                itensVencidos > 0 ? (
-                  <span className="situacao-sub situacao-sub--alerta">
-                    <AlertTriangle size={11} />
-                    {itensVencidos === 1 ? '1 conta atrasada' : `${itensVencidos} contas atrasadas`}
-                  </span>
-                ) : totalGastos <= totalRenda ? (
-                  <span className="situacao-sub situacao-sub--ok">Nenhuma conta atrasada</span>
-                ) : null
-              )}
+              <SituacaoStatus
+                mesFechado={mesFechado}
+                totalGastos={totalGastos}
+                totalRenda={totalRenda}
+                itensVencidos={itensVencidos}
+              />
               {situacaoExpanded && (
                 <div className="metric-card__detail" onClick={e => e.stopPropagation()}>
                   <div className="metric-detail-row">
