@@ -15,6 +15,28 @@
       })();
     </script>
 
+    <!-- PWA: o Chrome dispara beforeinstallprompt ~400ms após o carregamento, quando
+         ainda estamos na Landing e nenhum componente React montou. Capturar aqui, antes
+         do bundle, garante que o evento não se perca — ele é único por carregamento.
+         src/lib/pwaInstall.js lê este objeto; sdd:install-change avisa a UI. -->
+    <script>
+      (function () {
+        var bus = { event: null, installed: false };
+        window.__sddInstall = bus;
+        function aviso() { window.dispatchEvent(new Event('sdd:install-change')); }
+        window.addEventListener('beforeinstallprompt', function (e) {
+          e.preventDefault();
+          bus.event = e;
+          aviso();
+        });
+        window.addEventListener('appinstalled', function () {
+          bus.installed = true;
+          bus.event = null;
+          aviso();
+        });
+      })();
+    </script>
+
     <title>SaiDaDívida — Controle financeiro inteligente</title>
     <meta name="description" content="Gerencie sua renda, controle seus gastos e quite suas dívidas com planejamento inteligente." />
 
@@ -29,7 +51,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="SaiDaDívida" />
-    <link rel="apple-touch-icon" href="/icon.svg" />
+    <!-- Safari só aceita PNG aqui; com SVG o iOS cai num ícone genérico -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 
     <!-- Open Graph (preview ao compartilhar link) -->
     <meta property="og:type" content="website" />

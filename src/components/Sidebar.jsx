@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { isPushSupported, isSubscribed, subscribe, unsubscribe } from '../services/notificationService';
 import { getCurrentTheme, setTheme as persistTheme } from '../lib/theme';
+import { usePwaInstall } from '../lib/pwaInstall';
 import { getTelegramLink } from '../services/telegramService';
 import AjustesModal from './AjustesModal';
 
@@ -66,8 +67,7 @@ export default function Sidebar({
   const [notifEnabled, setNotifEnabled]   = useState(false);
   const [notifLoading, setNotifLoading]   = useState(false);
   const [theme, setTheme]                 = useState(getCurrentTheme);
-  const [installPrompt, setInstallPrompt] = useState(null);
-  const [isIOS, setIsIOS]                 = useState(false);
+  const { ios: isIOS, podeOferecer, promptInstall } = usePwaInstall();
   const [showIOSTip, setShowIOSTip]       = useState(false);
   const [ajustesOpen, setAjustesOpen]     = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -86,16 +86,6 @@ export default function Sidebar({
     if (userId) getTelegramLink(userId).then(link => setTelegramLinked(!!link));
   }, [userId]);
 
-  // PWA install prompt
-  useEffect(() => {
-    const handler = (e) => { e.preventDefault(); setInstallPrompt(e); };
-    window.addEventListener('beforeinstallprompt', handler);
-    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    const standalone = window.matchMedia('(display-mode: standalone)').matches;
-    if (ios && !standalone) setIsIOS(true);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
-
   // Close profile dropdown on outside click
   useEffect(() => {
     if (!profileMenuOpen) return;
@@ -113,12 +103,10 @@ export default function Sidebar({
     persistTheme(next);
   };
 
-  const handleInstall = async () => {
+  // No iOS não existe prompt programático — mostramos o passo a passo manual.
+  const handleInstall = () => {
     if (isIOS) { setShowIOSTip(v => !v); return; }
-    if (!installPrompt) return;
-    installPrompt.prompt();
-    const { outcome } = await installPrompt.userChoice;
-    if (outcome === 'accepted') setInstallPrompt(null);
+    promptInstall();
   };
 
   const handleToggleNotif = async () => {
@@ -149,7 +137,7 @@ export default function Sidebar({
     });
   };
 
-  const showInstallBtn = installPrompt || isIOS;
+  const showInstallBtn = podeOferecer;
   const initial       = getInitial(user);
   const nome          = getDisplayName(user);
 
