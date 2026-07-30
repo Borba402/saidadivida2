@@ -7,6 +7,7 @@ import {
 import { isPushSupported, isSubscribed, subscribe, unsubscribe } from '../services/notificationService';
 import { getCurrentTheme, setTheme as persistTheme } from '../lib/theme';
 import { usePwaInstall } from '../lib/pwaInstall';
+import IOSInstallTip from './IOSInstallTip';
 import { getTelegramLink } from '../services/telegramService';
 import AjustesModal from './AjustesModal';
 
@@ -159,12 +160,7 @@ export default function Sidebar({
       </header>
 
       {/* ── iOS install tip ── */}
-      {showIOSTip && (
-        <div className="ios-install-tip" onClick={() => setShowIOSTip(false)}>
-          <p>Toque em <strong>Compartilhar</strong> <span style={{ fontSize: '1.1em' }}>⎙</span> e depois em <strong>"Adicionar à Tela de Início"</strong></p>
-          <span className="ios-install-tip__close">Fechar ✕</span>
-        </div>
-      )}
+      {showIOSTip && <IOSInstallTip onClose={() => setShowIOSTip(false)} />}
 
       {/* ── Desktop Sidebar ── */}
       <aside className={`sidebar${collapsed ? ' sidebar--collapsed' : ''}`}>

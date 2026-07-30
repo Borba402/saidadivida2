@@ -6,7 +6,7 @@ import {
   Plus, Trash2, Calendar,
   Edit3, Check, X,
   ChevronDown, PlusCircle, AlertTriangle, Repeat2, Save, Lightbulb, Loader2,
-  Eye, EyeOff, CheckCircle2, Send,
+  Eye, EyeOff, CheckCircle2, Send, Download,
 } from 'lucide-react';
 import MonthNavigator from './MonthNavigator';
 import {
@@ -21,6 +21,8 @@ import {
   listRecurringBills,
 } from '../services/recurring';
 import { getTelegramLink } from '../services/telegramService';
+import { useInstallBanner } from '../lib/pwaInstall';
+import IOSInstallTip from './IOSInstallTip';
 
 const TELEGRAM_BANNER_KEY = 'sdd-telegram-banner-dismissed';
 
@@ -145,6 +147,14 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
   const dismissTelegramBanner = () => {
     localStorage.setItem(TELEGRAM_BANNER_KEY, '1');
     setTelegramBannerDismissed(true);
+  };
+
+  // Banner de instalação (Fase 17.2). No iOS não há prompt: abre a instrução manual.
+  const instalarBanner = useInstallBanner();
+  const [iosTipAberto, setIosTipAberto] = useState(false);
+  const handleInstalarApp = () => {
+    if (instalarBanner.ios) { setIosTipAberto(v => !v); return; }
+    instalarBanner.instalar();
   };
 
   const nomeUsuario = user?.user_metadata?.full_name?.split(' ')[0]
@@ -656,17 +666,29 @@ export default function CompromissosTab({ userId, user, newItemTrigger, onOpenTe
             </div>
           )}
 
-          {/* ── Banner de descoberta do Telegram (Fase 15) ── */}
-          {telegramLinked === false && !telegramBannerDismissed && (
-            <div className="telegram-discovery-banner">
+          {/* ── Banners de descoberta: no máximo um por vez, para não virar mural de avisos.
+                 Instalar vem antes do Telegram — é o que muda o acesso ao app inteiro. ── */}
+          {instalarBanner.visivel ? (
+            <div className="discovery-banner">
+              <Download size={18} style={{ color: 'var(--sdd-accent-strong)', flexShrink: 0 }} />
+              <span className="discovery-banner__text">Instale o app para acesso mais rápido</span>
+              <Button variant="secondary" size="sm" onClick={handleInstalarApp}>Instalar</Button>
+              <button className="btn-icon-plain" aria-label="Dispensar" onClick={instalarBanner.dispensar}>
+                <X size={16} />
+              </button>
+            </div>
+          ) : telegramLinked === false && !telegramBannerDismissed ? (
+            <div className="discovery-banner">
               <Send size={18} style={{ color: '#229ED9', flexShrink: 0 }} />
-              <span className="telegram-discovery-banner__text">Registre gastos direto pelo Telegram</span>
+              <span className="discovery-banner__text">Registre gastos direto pelo Telegram</span>
               <Button variant="secondary" size="sm" onClick={onOpenTelegram}>Conectar</Button>
               <button className="btn-icon-plain" aria-label="Dispensar" onClick={dismissTelegramBanner}>
                 <X size={16} />
               </button>
             </div>
-          )}
+          ) : null}
+
+          {iosTipAberto && <IOSInstallTip onClose={() => setIosTipAberto(false)} />}
 
           {/* ── Items section header ── */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>

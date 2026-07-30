@@ -1,4 +1,13 @@
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
+
+const BANNER_KEY = 'sdd-install-banner-dismissed';
+
+function bannerDispensado() {
+  try { return localStorage.getItem(BANNER_KEY) === '1'; } catch { return false; }
+}
+function marcarBannerDispensado() {
+  try { localStorage.setItem(BANNER_KEY, '1'); } catch { /* modo privado */ }
+}
 
 // O evento beforeinstallprompt é capturado pelo script inline do index.html (dispara
 // antes de qualquer componente montar). Aqui só lemos esse estado e avisamos a UI.
@@ -12,6 +21,8 @@ function atualizar() {
   // useSyncExternalStore compara por identidade: só troca o objeto se algo mudou
   if (proximo.podeInstalar !== snapshot.podeInstalar || proximo.instalado !== snapshot.instalado) {
     snapshot = proximo;
+    // Instalou: não voltamos a oferecer nem se o usuário reabrir pelo navegador
+    if (proximo.instalado) marcarBannerDispensado();
   }
   listeners.forEach((l) => l());
 }
@@ -67,5 +78,21 @@ export function usePwaInstall() {
     // No iOS não há prompt programático: oferecemos a instrução manual.
     podeOferecer: !instalado && !isStandalone() && (podeInstalar || ios),
     promptInstall,
+  };
+}
+
+/**
+ * Banner de descoberta na tela Início. Some ao ser dispensado (localStorage) e
+ * depois de instalar — mas o caminho pelo sheet do avatar continua disponível,
+ * então dispensar não fecha a porta.
+ */
+export function useInstallBanner() {
+  const { podeOferecer, ios, promptInstall: instalar } = usePwaInstall();
+  const [dispensado, setDispensado] = useState(bannerDispensado);
+  return {
+    visivel: podeOferecer && !dispensado,
+    ios,
+    instalar,
+    dispensar: () => { marcarBannerDispensado(); setDispensado(true); },
   };
 }

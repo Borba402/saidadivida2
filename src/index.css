@@ -4010,8 +4010,8 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
 }
 .renda-add-btn:hover { background: var(--lime-dim); }
 
-/* ── Banner de descoberta do Telegram (Início) ── */
-.telegram-discovery-banner {
+/* ── Banners de descoberta (Início): Telegram e instalar app ── */
+.discovery-banner {
   display: flex;
   align-items: center;
   gap: 0.65rem;
@@ -4021,14 +4021,14 @@ h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 600; line-height: 1.25
   border-radius: var(--radius-lg);
   margin-bottom: 1rem;
 }
-.telegram-discovery-banner__text {
+.discovery-banner__text {
   flex: 1;
   font-size: 0.85rem;
   color: var(--sdd-text);
 }
 @media (max-width: 480px) {
-  .telegram-discovery-banner { flex-wrap: wrap; }
-  .telegram-discovery-banner__text { flex-basis: 100%; }
+  .discovery-banner { flex-wrap: wrap; }
+  .discovery-banner__text { flex-basis: 100%; }
 }
 
 /* ── Pill de status Telegram no menu do perfil ── */
